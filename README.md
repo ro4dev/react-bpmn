@@ -65,9 +65,12 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 
 ## Estado del proyecto
 
-**Fase actual: 1 — Editor visual básico** 🚧
+**Fase actual: 2 — Maduración del editor** ✅ (siguiente: Fase 3 — persistencia en server)
 
-- Repos local: `~/Projects/react-bpmn` · remoto: [`github.com/ro4dev/react-bpmn`](https://github.com/ro4dev/react-bpmn)
-- Editor funcional: canvas React Flow con paleta (**Inicio, Fin, Tarea, Decisión**), drag-and-drop de nodos, conexiones, panel de propiedades (título, descripción, responsable) y guardado local (`localStorage`) con autoguardado.
-- Exportar/importar el modelo como JSON.
-- Planificación con OpenSpec: change de la Fase 1 archivado en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).
+- **Editor visual**: canvas React Flow con paleta (**Inicio, Fin, Tarea, Decisión**), drag-and-drop de nodos, conexiones, minimapa, snap-to-grid y panel de propiedades.
+- **Validación en tiempo real**: panel de issues (errores/advertencias) al modelar — ver `client/src/lib/validation/`.
+- **Deshacer/rehacer**: historial de snapshots con `Ctrl+Z` / `Ctrl+Shift+Z` y botones (AD-012).
+- **Exportación**: PNG/SVG del diagrama con `html-to-image` (AD-013).
+- **Guardado local** (`localStorage`) con autoguardado; exportar/importar el modelo como JSON.
+- La persistencia en server (CRUD + versionado) llega en la [Fase 3](./docs/10-roadmap.md).
+- Planificación con OpenSpec: changes archivados en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).

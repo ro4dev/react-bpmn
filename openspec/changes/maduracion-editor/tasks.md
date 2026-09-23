@@ -20,6 +20,6 @@
 
 ## 5. ADR y documentación
 
-- [ ] 5.1 Resolver AD-009 en `docs/09-decisiones-de-diseno.md` (conclusión: estado local con hooks, sin librería global) y agregar AD-012 (historial de snapshots) y AD-013 (exportación con `html-to-image`), y verificar la tabla del documento
-- [ ] 5.2 Actualizar `docs/05-frontend.md` (estructura con `lib/validation/`, toolbar ampliada) y `docs/10-roadmap.md` (Fase 2 ✅) y verificar que los cambios quedan documentados
-- [ ] 5.3 Correr `npm run lint` (client y raíz) con 0 errores y marcar las tareas completadas
+- [x] 5.1 Resolver AD-009 en `docs/09-decisiones-de-diseno.md` (conclusión: estado local con hooks, sin librería global) y agregar AD-012 (historial de snapshots) y AD-013 (exportación con `html-to-image`), y verificar la tabla del documento
+- [x] 5.2 Actualizar `docs/05-frontend.md` (estructura con `lib/validation/`, toolbar ampliada) y `docs/10-roadmap.md` (Fase 2 ✅) y verificar que los cambios quedan documentados
+- [x] 5.3 Correr `npm run lint` (client y raíz) con 0 errores y marcar las tareas completadas

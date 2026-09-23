@@ -14,9 +14,11 @@
 | [AD-006](#ad-006-formato-del-modelo-a-definir) | BPMN estándar vs formato propio simplificado | ✅ adoptada (formato propio, provisional) |
 | [AD-007](#ad-007-puertos-y-proxy-de-desarrollo) | Server en 4000, client en 5173 con proxy `/api` | ✅ adoptada |
 | [AD-008](#ad-008-alcance-modelar-vs-ejecutar) | ¿Solo modelar o también ejecutar procesos? | ⏳ abierta |
-| [AD-009](#ad-009-estado-global) | Estado global del frontend | ⏳ abierta (evaluar en Fase 2) |
+| [AD-009](#ad-009-estado-global) | Estado global del frontend | ✅ adoptada (Fase 2: estado local con hooks) |
 | [AD-010](#ad-010-base-de-datos) | Motor de persistencia del server | ⏳ abierta (Fase 3) |
 | [AD-011](#ad-011-estado-de-trabajo-del-editor-vs-modelo) | Estado de trabajo del editor (React Flow) vs modelo persistible | ✅ adoptada (Fase 1) |
+| [AD-012](#ad-012-historial-de-snapshots-para-deshacerrehacer) | Deshacer/rehacer con snapshots en el historial | ✅ adoptada (Fase 2) |
+| [AD-013](#ad-013-exportacion-de-imagen-con-html-to-image) | Exportación PNG/SVG con `html-to-image` | ✅ adoptada (Fase 2) |
 
 ---
 
@@ -84,11 +86,29 @@
 
 **Consecuencias:** el formato del modelo debe guardarse en un esquema que permita *algún día* ejecutarlo (separar geometría de la semántica de los nodos, `props` con `responsible`, `condition`…).
 
+### AD-012: Historial de snapshots para deshacer/rehacer
+
+**Contexto:** el editor necesita deshacer/rehacer sin librería global (ver AD-009/AD-012) ni dependencias nuevas, sobre el estado `{nodes, edges}` del editor.
+
+**Decisión:** ✅ **Adoptada (Fase 2):** historial de **snapshots** en `useProcessModel` (`past`/`future`, clonados con `structuredClone`), con checkpoints en acciones discretas (agregar `addNode`, conectar `onConnect`, eliminar `onBeforeDelete`, arrastrar `onNodeDragStart`/`onNodeDragStop`) y **coalescing por pausa (~700 ms)** para ediciones de propiedades (`updateNode`). `undo`/`redo` restauran los snapshots; `canUndo`/`canRedo` habilitan los botones y los atajos `Ctrl+Z` / `Ctrl+Shift+Z` (ignorando eventos en inputs).
+
+**Consecuencias:** historial acotado por uso (snapshots en memoria, sin persistir); el `structuredClone` evita mutaciones compartidas; el autoguardado/serialización de la Fase 1 sigue funcionando porque el historial es estado paralelo al modelo.
+
+### AD-013: Exportación de imagen con html-to-image
+
+**Contexto:** React Flow v12 removió `toPng`/`toSvg` del core, y el paquete `@xyflow/tools` no existe (verificado en npm). Se necesita exportar el diagrama como PNG y SVG.
+
+**Decisión:** ✅ **Adoptada (Fase 2):** usar **`html-to-image`** (estándar de la comunidad React Flow) sobre el elemento `.react-flow__viewport`, combinando `getNodesBounds` + `getViewportForBounds` para encuadrar todos los nodos en una imagen de tamaño fijo con fondo blanco; exportación via `toPng`/`toSvg` + descarga. El `ReactFlowProvider` sube a `App` para que la toolbar acceda a `useReactFlow`/`useStoreApi`.
+
+**Consecuencias:** nueva dependencia dev en `client/`; la exportación clona el DOM (no toca el estado real); gráficos generados con fondo blanco uniforme (sin necesidad de exportar el minimapa distintas).
+
 ### AD-009: Estado global
 
 **Contexto:** el editor tendrá estado compartido (modelo, selección, historial de deshacer).
 
-**Decisión:** ⏳ Abierta. Sin librería hoy; se evalúan Zustand/Jotai/Context en la Fase 2 cuando aparezca la complejidad real.
+**Decision:** ⏳ ⏳ implementación 🚧→ ✅ **Adoptada (Fase 2, AD-009 resuelto):** estado local con hooks. El estado global del editor vive en los hooks (`useProcessModel`) + estado local de React en `App`; **sin librería global** (ni Zustand ni Jotai ni Context global). Se evaluó de nuevo en la Fase 2 con el historial deshacer/rehacer y la validación, y se concluyó que las 2 features se resuelven con hooks puros y estado local (**AD-012**, **AD-013**).
+
+**Consecuencias:** cero dependencia nueva; estado en el DOM de React (se pierde al recargar si el modelo no se persistió); el `ProcessModel` queda como única fuente de verdad para persistencia. Si la colaboración en tiempo real (Fase 4) lo pide, se revisita.
 
 ### AD-010: Base de datos
 

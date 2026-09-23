@@ -19,29 +19,33 @@
 - Persistencia local (`localStorage`) con autoguardado; exportar/importar el modelo como JSON.
 - Sin API de procesos todavía (llega en la Fase 3); dev en `localhost:5173` con proxy `/api`.
 
-## Estructura de `src/` (Fase 1)
+## Estructura de `src/` (Fase 2)
 
 ```
 src/
-├── main.tsx               → Bootstrap
-├── App.tsx                → Layout del editor (toolbar + paleta + canvas + propiedades)
+├── main.tsx               → Bootstrap (monta App)
+├── App.tsx                → Workspace del editor (paleta | canvas | propiedades+validación) + atajos Ctrl+Z/Ctrl+Shift+Z
 ├── features/
 │   └── editor/
-│       ├── Canvas.tsx          → Lienzo (React Flow) + drag-and-drop y conexiones
-│       ├── Palette.tsx         → Lista de elementos arrastrables
+│       ├── Canvas.tsx          → Lienzo (React Flow): drag-and-drop, conexiones, minimapa, grid
+│       ├── Palette.tsx         → Lista de elementos arrastrables (Inicio, Fin, Tarea, Decisión)
 │       ├── PropertiesPanel.tsx → Edita el nodo seleccionado
-│       ├── Toolbar.tsx         → Guardar, exportar/importar
+│       ├── ValidationPanel.tsx → Issues de validación en vivo (columna derecha)
+│       ├── Toolbar.tsx         → Guardar, deshacer/rehacer, exportar PNG/SVG, exportar/importar JSON
 │       ├── nodes.tsx           → Nodos custom (Inicio, Fin, Tarea, Decisión)
 │       └── editor.css          → Estilos del editor
 ├── hooks/
-│   └── useProcessModel.ts  → Estado del editor + autoguardado en localStorage
-└── lib/model/
-    ├── types.ts            → ProcessModel, ProcessNode, ProcessEdge
-    ├── palette.ts          → Paleta mínima y constantes de drag-and-drop
-    └── serialize.ts        → Serialización modelo ⇄ React Flow + validación runtime
+│   └── useProcessModel.ts  → Estado del editor + historial deshacer/rehacer + autoguardado
+└── lib/
+    ├── model/
+    │   ├── types.ts            → ProcessModel, ProcessNode, ProcessEdge
+    │   ├── palette.ts          → Paleta mínima y constantes de drag-and-drop
+    │   └── serialize.ts        → Serialización modelo ⇄ React Flow + validación runtime
+    └── validation/
+        └── validateProcess.ts  → Validación pura del proceso (errores/advertencias, AD-012)
 ```
 
-Pendiente para fases siguientes: `components/` (UI genérica), `lib/validation/`, `api/` (cliente HTTP) y `features/processes/` (listado de procesos, Fase 3).
+Pendiente para fases siguientes: `components/` (UI genérica), `lib/export/` → ya resuelto en Fase 2 con `html-to-image` (AD-013), `api/` (cliente HTTP) y `features/processes/` (listado de procesos, Fase 3).
 
 ## Decisiones de frontend
 

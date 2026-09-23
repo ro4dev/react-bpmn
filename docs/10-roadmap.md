@@ -27,13 +27,15 @@ Objetivo: poder **dibujar un proceso** en el navegador.
 
 > Implementado y archivado en OpenSpec (`openspec/changes/archive/2026-09-22-editor-visual-basico/`). Validación manual opcional por parte del usuario: drag de los 4 tipos, conexiones, edición de propiedades, recarga con persistencia y export/import.
 
-## Fase 2 — Maduración del editor ⏳
+## Fase 2 — Maduración del editor ✅
 
-- [ ] Validación del proceso (camino de inicio a fin, nodos sin conexión, etc.)
-- [ ] Deshacer/rehacer
-- [ ] Estado global del editor (ver AD-009)
-- [ ] Zoom, minimapa y snap-to-grid prolijos
-- [ ] Exportar imagen (PNG/SVG) del diagrama
+- [x] Validación del proceso en vivo (`ValidationPanel`): vacío, falta de Inicio/Fin, múltiples Inicios, nodos aislados, no alcanzables y sin salida a Fin (AD-[012](./09-decisiones-de-diseno.md) — ver `lib/validation/`)
+- [x] Deshacer/rehacer con historial de snapshots en `useProcessModel` (AD-012) + botones y atajos `Ctrl+Z` / `Ctrl+Shift+Z`
+- [x] Estado local con hooks, sin librería global (AD-009 resuelto)
+- [x] Minimapa, zoom y snap-to-grid
+- [x] Exportar imagen PNG/SVG con `html-to-image` (AD-013) desde la toolbar
+
+> Implementado y archivado en OpenSpec (`openspec/changes/archive/`). Validación manual opcional por parte del usuario: deshacer/rehacer en vivo, panel de validación ante un modelo incompleto, y exportación PNG/SVG.
 
 ## Fase 3 — Persistencia en server ⏳
 
