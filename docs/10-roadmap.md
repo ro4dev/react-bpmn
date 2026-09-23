@@ -1,0 +1,61 @@
+# 10 — Roadmap
+
+> Documento: `docs/10-roadmap.md`
+>
+> Fases de desarrollo. El estado de cada fase se marca con ✅ (completada), 🚧 (en curso) o ⏳ (pendiente).
+
+## Fase 0 — Scaffold ✅
+
+- [x] Repo `react-bpmn` creado (local + GitHub `ro4dev/react-bpmn`)
+- [x] Frontend Vite + React + TS (`client/`)
+- [x] Backend Express + TS (`server/`)
+- [x] Scripts raíz con `concurrently`
+- [x] Proxy de dev `/api` → 4000
+- [x] Smoke test de `/api/health`
+- [x] Documentación completa en `docs/`
+
+## Fase 1 — Editor visual básico ⏳
+
+Objetivo: poder **dibujar un proceso** en el navegador.
+
+- [ ] Instalar `@xyflow/react` y montar el canvas (`Canvas`, `Palette`, `Toolbar`)
+- [ ] Definir paleta mínima: Inicio, Fin, Tarea, Decisión (confirmar con usuario)
+- [ ] Drag-and-drop de nodos al canvas + conexiones entre ellos
+- [ ] Panel de propiedades para el nodo seleccionado (título, descripción, responsable)
+- [ ] Guardado local en el navegador (`localStorage`) + autoguardado
+- [ ] Exportar/importar el modelo como JSON
+
+## Fase 2 — Maduración del editor ⏳
+
+- [ ] Validación del proceso (camino de inicio a fin, nodos sin conexión, etc.)
+- [ ] Deshacer/rehacer
+- [ ] Estado global del editor (ver AD-009)
+- [ ] Zoom, minimapa y snap-to-grid prolijos
+- [ ] Exportar imagen (PNG/SVG) del diagrama
+
+## Fase 3 — Persistencia en server ⏳
+
+- [ ] Definir motor de base de datos (ver AD-010)
+- [ ] CRUD de procesos (`/api/processes`)
+- [ ] Versionado de procesos (`ProcessVersion`)
+- [ ] Listado y búsqueda de procesos en el client
+
+## Fase 4 — Colaboración y publicación ⏳
+
+- [ ] Usuarios y autenticación
+- [ ] Compartir procesos (link público / permisos)
+- [ ] Historial de cambios por versión
+
+## Fase 5 — Ejecución (en evaluación) ⏳
+
+Solo si se resuelve [AD-008](./09-decisiones-de-diseno.md) a favor de ejecutar:
+
+- [ ] Motor de instancias de proceso
+- [ ] Tareas asignadas a usuarios/roles
+- [ ] Panel de "mis tareas"
+- [ ] Avance de flujo (aprobar/rechazar/derivar)
+
+## Notas
+
+- El orden de las fases puede cambiar según las decisiones abiertas (AD-006, AD-008).
+- Cada fase completa su trabajo con la **actualización de la documentación** correspondiente (regla del proyecto, ver [11 — Convenciones](./11-convenciones-y-flujo-de-trabajo.md)).
