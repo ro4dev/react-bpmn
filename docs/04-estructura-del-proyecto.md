@@ -2,7 +2,7 @@
 
 > Documento: `docs/04-estructura-del-proyecto.md`
 >
-> Documenta el árbol de carpetas **al cierre de la Fase 0** (scaffold). Se actualiza en cada fase que agregue o mueva archivos.
+> Documenta el árbol de carpetas **al cierre de la Fase 1** (scaffold + editor visual básico). Se actualiza en cada fase que agregue o mueva archivos.
 
 ## Árbol completo
 
@@ -34,10 +34,25 @@ react-bpmn/
 │   │   ├── favicon.svg         → Ícono del sitio
 │   │   └── icons.svg           → Sprite de íconos (template Vite)
 │   ├── src/
-│   │   ├── App.tsx             → Componente raíz (placeholder del modelador)
+│   │   ├── App.tsx             → Componente raíz: layout del editor (toolbar + paleta + canvas + propiedades)
 │   │   ├── App.css             → Estilos de App.tsx
 │   │   ├── index.css           → Estilos globales
-│   │   └── main.tsx            → Bootstrap de React (createRoot + StrictMode)
+│   │   ├── main.tsx            → Bootstrap de React (createRoot + StrictMode)
+│   │   ├── features/
+│   │   │   └── editor/         → Feature del editor visual (Fase 1)
+│   │   │       ├── Canvas.tsx          → Lienzo (React Flow), drag-and-drop y conexiones
+│   │   │       ├── Palette.tsx         → Lista de elementos arrastrables
+│   │   │       ├── PropertiesPanel.tsx → Edita el nodo seleccionado
+│   │   │       ├── Toolbar.tsx         → Guardar, exportar/importar
+│   │   │       ├── nodes.tsx           → Nodos custom (Inicio, Fin, Tarea, Decisión)
+│   │   │       └── editor.css          → Estilos del editor
+│   │   ├── hooks/
+│   │   │   └── useProcessModel.ts  → Estado del editor + autoguardado en localStorage
+│   │   └── lib/
+│   │       └── model/              → Tipos, paleta y serialización del modelo
+│   │           ├── types.ts            → ProcessModel, ProcessNode, ProcessEdge
+│   │           ├── palette.ts          → Paleta mínima y constantes de drag-and-drop
+│   │           └── serialize.ts        → Serialización modelo ⇄ React Flow + validación
 │   ├── tsconfig.json           → Referencia a app + node configs
 │   ├── tsconfig.app.json       → TS para código de la app (src/)
 │   ├── tsconfig.node.json      → TS para tooling (vite.config.ts)
@@ -79,10 +94,9 @@ react-bpmn/
 ```
 client/src/
 ├── components/       → Componentes reutilizables de UI
-├── features/         → Editor (paleta, lienzo, panel de propiedades)
-├── hooks/            → Hooks personalizados
-├── lib/              → Utilidades, formato del modelo, validación
-└── api/              → Cliente HTTP para la API
+├── lib/validation/   → Validación semántica de procesos (Fase 2)
+├── api/              → Cliente HTTP para la API (Fase 3)
+└── features/processes/ → Listado y búsqueda de procesos (Fase 3)
 
 server/src/
 ├── controllers/      → Lógica de los endpoints

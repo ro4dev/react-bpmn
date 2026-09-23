@@ -10,12 +10,13 @@
 | [AD-002](#ad-002-typescript-en-todo-el-proyecto) | TypeScript en frontend y backend | ✅ adoptada |
 | [AD-003](#ad-003-react-19--vite-en-el-frontend) | React 19 + Vite 8 | ✅ adoptada |
 | [AD-004](#ad-004-express-5-en-el-backend) | Express 5 | ✅ adoptada |
-| [AD-005](#ad-005-editor-con-react-flow) | Editor sobre React Flow (`@xyflow/react`) | 📌 planeada (Fase 1) |
-| [AD-006](#ad-006-formato-del-modelo-a-definir) | BPMN estándar vs formato propio simplificado | ⏳ abierta |
+| [AD-005](#ad-005-editor-con-react-flow) | Editor sobre React Flow (`@xyflow/react`) | ✅ adoptada (Fase 1) |
+| [AD-006](#ad-006-formato-del-modelo-a-definir) | BPMN estándar vs formato propio simplificado | ✅ adoptada (formato propio, provisional) |
 | [AD-007](#ad-007-puertos-y-proxy-de-desarrollo) | Server en 4000, client en 5173 con proxy `/api` | ✅ adoptada |
 | [AD-008](#ad-008-alcance-modelar-vs-ejecutar) | ¿Solo modelar o también ejecutar procesos? | ⏳ abierta |
 | [AD-009](#ad-009-estado-global) | Estado global del frontend | ⏳ abierta (evaluar en Fase 2) |
 | [AD-010](#ad-010-base-de-datos) | Motor de persistencia del server | ⏳ abierta (Fase 3) |
+| [AD-011](#ad-011-estado-de-trabajo-del-editor-vs-modelo) | Estado de trabajo del editor (React Flow) vs modelo persistible | ✅ adoptada (Fase 1) |
 
 ---
 
@@ -57,13 +58,13 @@
 
 **Decisión:** usar `@xyflow/react` (React Flow) como base del lienzo del editor. Proporciona nodos, edges, minimapa, controles, snap-to-grid y serialización de `{nodes, edges}`.
 
-**Consecuencias:** el formato interno del modelo será JSON de `{nodes, edges}` de React Flow (compatible con el borrador de [08 — Modelo de datos](./08-modelo-de-datos.md)). Se instala y configura en la Fase 1.
+**Consecuencias:** el formato interno del modelo será JSON de `{nodes, edges}` de React Flow (compatible con el borrador de [08 — Modelo de datos](./08-modelo-de-datos.md)). Instalado (`@xyflow/react` v12) y configurado en la Fase 1.
 
 ### AD-006: Formato del modelo — a definir
 
 **Contexto:** ¿exportar BPMN 2.0 estándar (interoperable con Camunda, Bizagi…) o un formato visual propio simplificado (más fácil para usuarios no técnicos)?
 
-**Decisión:** ⏳ Abierta. En la Fase 1 se arranca con el formato propio simplificado (React Flow JSON) para avanzar; la compatibilidad BPMN se evalúa antes de la persistencia definitiva.
+**Decisión:** ✅ adoptada (provisional). Se implementó el **formato propio simplificado** (React Flow JSON, `ProcessModel` en `client/src/lib/model/`) en la Fase 1 para avanzar; la compatibilidad BPMN se reevalúa antes de la persistencia definitiva (Fase 3).
 
 **Consecuencias:** arrancar rápido con UX simple; si luego se quiere BPMN estándar, hay que mapear nodos propios → elementos BPMN.
 
@@ -94,3 +95,11 @@
 **Contexto:** la persistencia definitiva de procesos (Fase 3) necesita un motor.
 
 **Decisión:** ⏳ Abierta. Candidatos: SQLite (cero infra, perfecto para empezar) o Postgres (si aparece un servicio de hosting). La capa de datos queda aislada en `server/src/models/` para no acoplarse.
+
+### AD-011: Estado de trabajo del editor vs modelo
+
+**Contexto:** el editor de la Fase 1 podía guardar el estado de React Flow directo, o mantener el `ProcessModel` como única fuente de verdad y derivar de él la vista.
+
+**Decisión:** el **estado de trabajo** del editor es el `{nodes, edges}` de React Flow (con `kind` y `props` en `node.data`), y el `ProcessModel` es el **formato de persistencia/exportación/importación**: la serialización `modelo ⇄ React Flow` vive en un solo lugar (`client/src/lib/model/serialize.ts`), con validación de forma en runtime.
+
+**Consecuencias:** cero sincronización duplicada en una fase sin colaboración ni versionado. Si en la Fase 2 el estado global (AD-009) o el versionado (Fase 3) lo piden, `serialize.ts` es el punto único a reutilizar para mantener el `ProcessModel` como fuente de verdad.

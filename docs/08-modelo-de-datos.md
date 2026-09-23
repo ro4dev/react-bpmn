@@ -2,7 +2,7 @@
 
 > Documento: `docs/08-modelo-de-datos.md`
 >
-> Entidades del dominio y su forma. **Es un borrador de trabajo** que se concreta cuando haya persistencia (Fase 3). Se define primero la estructura del modelo de proceso, porque de ahí derivan las entidades.
+> Formato y entidades del dominio. El **formato del modelo** ya está implementado en la Fase 1 en `client/src/lib/model/` (JSON propio, ver [AD-006](./09-decisiones-de-diseno.md)); las **entidades de persistencia** se concretan en la Fase 3 (CRUD de procesos).
 
 ## El modelo de proceso (el corazón de la app)
 
@@ -11,7 +11,7 @@ Un **proceso modelado** es, en esencia, un grafo dirigido:
 - **Nodos** = pasos del proceso (tarea, decisión, inicio, fin, espera).
 - **Conexiones (edges)** = transiciones entre pasos, que pueden llevar condiciones ("si aprobado → ...", "si no → ...").
 
-### Formato del modelo (borrador)
+### Formato del modelo (implementado en Fase 1)
 
 ```typescript
 // Modelo de proceso (compartido entre frontend y backend)
@@ -26,7 +26,7 @@ type ProcessNodeKind =
   | "end"        // fin del flujo
   | "task"       // tarea/paso (con responsable y descripción)
   | "decision"   // decisión sí/no (con condición)
-  | "wait";      // espera/espera de aprobación  [a confirmar]
+  | "wait";      // espera/espera de aprobación  [fuera de la paleta Fase 1]
 
 interface ProcessNode {
   id: string;        // único dentro del modelo
@@ -48,7 +48,7 @@ interface ProcessEdge {
 }
 ```
 
-> El formato final depende de [AD-006](./09-decisiones-de-diseno.md): BPMN estándar (`bpmn-js`) o formato propio simplificado (React Flow + JSON propio). La estructura de arriba es la del formato propio.
+> La Fase 1 implementó la paleta mínima **Inicio, Fin, Tarea, Decisión** (confirmada con el usuario); `wait` queda fuera por ahora. El formato final del modelo sigue condicionado por [AD-006](./09-decisiones-de-diseno.md): BPMN estándar (`bpmn-js`) o formato propio simplificado. Hoy está implementado el formato propio (ver la serialización en `client/src/lib/model/`).
 
 ## Entidades de persistencia (planeadas, Fase 3)
 
@@ -76,6 +76,6 @@ Process 1───1 model (embebido en Process o en la última ProcessVersion)
 
 ## Decisiones abiertas
 
-- **Persistencia local primero (navegador) y server después**: el guardado de la Fase 1 será en `localStorage`/IndexedDB; la API de procesos (Fase 3) es la persistencia definitiva.
+- **Persistencia local primero (navegador) y server después**: ✅ implementado en la Fase 1 (`localStorage` + autoguardado en `client/src/hooks/useProcessModel.ts`); la API de procesos (Fase 3) es la persistencia definitiva.
 - **Motor de base de datos**: a definir (SQLite para empezar o Postgres si ya hay infra). Ver [AD-010](./09-decisiones-de-diseno.md).
 - **¿El usuario es persona o rol?**: en la Fase 1 el responsable es texto libre (`assignee`), sin tabla de usuarios todavía.

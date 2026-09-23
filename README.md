@@ -31,7 +31,7 @@ Toda la documentación del proyecto vive en [`docs/`](./docs/), en formato `.md`
 | Capa | Tecnología |
 | --- | --- |
 | Frontend | React 19 + Vite 8 + TypeScript |
-| Modelador visual | React Flow (`@xyflow/react`) — planeado, no instalado aún |
+| Modelador visual | React Flow (`@xyflow/react`) | 12.x | Instalado (Fase 1) |
 | Backend | Node + Express 5 + TypeScript |
 | Lint | oxlint |
 | Dev | `concurrently` (levanta client y server juntos) |
@@ -65,8 +65,9 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 
 ## Estado del proyecto
 
-**Fase actual: 0 — Scaffold** ✅
+**Fase actual: 1 — Editor visual básico** 🚧
 
 - Repos local: `~/Projects/react-bpmn` · remoto: [`github.com/ro4dev/react-bpmn`](https://github.com/ro4dev/react-bpmn)
-- Frontend y backend levantados y verificados (build + lint + smoke test de `/api/health`).
-- Sin funcionalidad de modelado aún: el editor arranca en la Fase 1 (ver [Roadmap](./docs/10-roadmap.md)).
+- Editor funcional: canvas React Flow con paleta (**Inicio, Fin, Tarea, Decisión**), drag-and-drop de nodos, conexiones, panel de propiedades (título, descripción, responsable) y guardado local (`localStorage`) con autoguardado.
+- Exportar/importar el modelo como JSON.
+- Planificación con OpenSpec: change de la Fase 1 archivado en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).

@@ -14,16 +14,18 @@
 - [x] Smoke test de `/api/health`
 - [x] Documentación completa en `docs/`
 
-## Fase 1 — Editor visual básico ⏳
+## Fase 1 — Editor visual básico ✅
 
 Objetivo: poder **dibujar un proceso** en el navegador.
 
-- [ ] Instalar `@xyflow/react` y montar el canvas (`Canvas`, `Palette`, `Toolbar`)
-- [ ] Definir paleta mínima: Inicio, Fin, Tarea, Decisión (confirmar con usuario)
-- [ ] Drag-and-drop de nodos al canvas + conexiones entre ellos
-- [ ] Panel de propiedades para el nodo seleccionado (título, descripción, responsable)
-- [ ] Guardado local en el navegador (`localStorage`) + autoguardado
-- [ ] Exportar/importar el modelo como JSON
+- [x] Instalar `@xyflow/react` y montar el canvas (`Canvas`, `Palette`, `Toolbar`)
+- [x] Definir paleta mínima: Inicio, Fin, Tarea, Decisión (confirmada con el usuario)
+- [x] Drag-and-drop de nodos al canvas + conexiones entre ellos
+- [x] Panel de propiedades para el nodo seleccionado (título, descripción, responsable)
+- [x] Guardado local en el navegador (`localStorage`) + autoguardado
+- [x] Exportar/importar el modelo como JSON
+
+> Implementado y archivado en OpenSpec (`openspec/changes/archive/2026-09-22-editor-visual-basico/`). Validación manual opcional por parte del usuario: drag de los 4 tipos, conexiones, edición de propiedades, recarga con persistencia y export/import.
 
 ## Fase 2 — Maduración del editor ⏳
 
