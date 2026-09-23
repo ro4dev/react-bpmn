@@ -81,6 +81,22 @@
   background: #f1f5f9;
 }
 
+.rb-toolbar__button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rb-toolbar__button:disabled:hover {
+  background: #fff;
+}
+
+.rb-toolbar__separator {
+  align-self: center;
+  width: 1px;
+  height: 1.4rem;
+  background: #cbd5e1;
+}
+
 /* --- Canvas --- */
 
 .rb-canvas {
@@ -220,4 +236,68 @@
 
 .rb-properties__field textarea {
   resize: vertical;
+}
+
+/* --- Validación --- */
+
+.rb-validation {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.rb-validation__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+
+.rb-validation__ok {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #15803d;
+}
+
+.rb-validation__list {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rb-validation__list:last-child {
+  margin-bottom: 0;
+}
+
+.rb-validation__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+}
+
+.rb-validation__item--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.rb-validation__item--warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #b45309;
+}
+
+.rb-validation__badge {
+  font-weight: 700;
+  flex: none;
 }

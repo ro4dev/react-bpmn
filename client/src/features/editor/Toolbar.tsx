@@ -1,6 +1,12 @@
 /**
- * Barra de herramientas del editor: guardar, exportar e importar el modelo.
+ * Barra de herramientas del editor: guardar/exportar/importar modelo,
+ * deshacer/rehacer y exportación del diagrama como PNG/SVG.
+ * Vive bajo `ReactFlowProvider` para acceder a la instancia de React Flow.
  */
+import { useReactFlow, useStoreApi } from "@xyflow/react";
+import { useCallback } from "react";
+
+import { exportDiagram, type ImageFormat } from "./exportImage";
 import "./editor.css";
 
 interface ToolbarProps {
@@ -10,12 +16,61 @@ interface ToolbarProps {
   onExport: () => void;
   /** Abre el selector de archivo para importar un modelo JSON. */
   onImport: () => void;
+  /** Deshace el último cambio del modelo. */
+  onUndo: () => void;
+  /** Rehace el cambio deshecho. */
+  onRedo: () => void;
+  /** Hay historia para deshacer. */
+  canUndo: boolean;
+  /** Hay historia para rehacer. */
+  canRedo: boolean;
 }
 
 /** Barra de herramientas del editor. */
-export function Toolbar({ onSave, onExport, onImport }: ToolbarProps) {
+export function Toolbar({
+  onSave,
+  onExport,
+  onImport,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+}: ToolbarProps) {
+  const { getNodes } = useReactFlow();
+  const { getState } = useStoreApi();
+
+  const handleExportImage = useCallback(
+    (format: ImageFormat) => {
+      exportDiagram(format, getNodes, getState().domNode).catch((error: unknown) => {
+        console.error("No se pudo exportar el diagrama:", error);
+      });
+    },
+    [getNodes, getState],
+  );
+
   return (
     <nav className="rb-toolbar" aria-label="Barra de herramientas del editor">
+      <button
+        type="button"
+        className="rb-toolbar__button"
+        onClick={onUndo}
+        disabled={!canUndo}
+        title="Deshacer (Ctrl+Z)"
+      >
+        Deshacer
+      </button>
+      <button
+        type="button"
+        className="rb-toolbar__button"
+        onClick={onRedo}
+        disabled={!canRedo}
+        title="Rehacer (Ctrl+Shift+Z)"
+      >
+        Rehacer
+      </button>
+
+      <span className="rb-toolbar__separator" aria-hidden="true" />
+
       <button type="button" className="rb-toolbar__button" onClick={onSave}>
         Guardar
       </button>
@@ -24,6 +79,23 @@ export function Toolbar({ onSave, onExport, onImport }: ToolbarProps) {
       </button>
       <button type="button" className="rb-toolbar__button" onClick={onImport}>
         Importar JSON
+      </button>
+
+      <span className="rb-toolbar__separator" aria-hidden="true" />
+
+      <button
+        type="button"
+        className="rb-toolbar__button"
+        onClick={() => handleExportImage("png")}
+      >
+        Exportar PNG
+      </button>
+      <button
+        type="button"
+        className="rb-toolbar__button"
+        onClick={() => handleExportImage("svg")}
+      >
+        Exportar SVG
       </button>
     </nav>
   );

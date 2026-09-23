@@ -1,6 +1,8 @@
 /**
  * Lienzo del editor: canvas de React Flow con los nodos personalizados,
- * controles de viewport (zoom, minimapa, grid) y drag-and-drop desde la paleta.
+ * controles de viewport (zoom, minimapa con colores por tipo, grid),
+ * drag-and-drop desde la paleta y conexiones entre nodos.
+ * El `ReactFlowProvider` vive en `App.tsx` (lo requiere `Toolbar` para exportar).
  */
 import {
   Background,
@@ -8,13 +10,13 @@ import {
   Controls,
   MiniMap,
   ReactFlow,
-  ReactFlowProvider,
-  useReactFlow,
   type Connection,
   type Edge,
   type EdgeChange,
+  type Node,
   type NodeChange,
   type OnSelectionChangeParams,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback } from "react";
@@ -35,6 +37,14 @@ const nodeTypes = {
   decision: DecisionNode,
 };
 
+/** Color del minimapa por tipo de nodo. */
+const MINIMAP_COLORS: Record<string, string> = {
+  start: "#16a34a",
+  end: "#dc2626",
+  task: "#0284c7",
+  decision: "#d97706",
+};
+
 interface CanvasProps {
   nodes: FlowNode[];
   edges: Edge[];
@@ -45,18 +55,14 @@ interface CanvasProps {
   onSelectionChange: (nodeId: string | null) => void;
   /** Agrega un nodo del tipo dado en una posición del canvas. */
   onDropNode: (kind: ProcessNodeKind, position: { x: number; y: number }) => void;
+  /** Checkpoint de deshacer antes de una eliminación (React Flow lo llama antes de borrar). */
+  onBeforeDelete: () => Promise<boolean>;
+  /** Checkpoint de deshacer al iniciar arrastrar un nodo. */
+  onNodeDragStart: () => void;
 }
 
-/** Lienzo del editor, envuelto en el provider que React Flow requiere. */
-export function Canvas(props: CanvasProps) {
-  return (
-    <ReactFlowProvider>
-      <EditorCanvas {...props} />
-    </ReactFlowProvider>
-  );
-}
-
-function EditorCanvas({
+/** Lienzo del editor (requiere estar bajo `ReactFlowProvider`). */
+export function Canvas({
   nodes,
   edges,
   onNodesChange,
@@ -64,6 +70,8 @@ function EditorCanvas({
   onConnect,
   onSelectionChange,
   onDropNode,
+  onBeforeDelete,
+  onNodeDragStart,
 }: CanvasProps) {
   const { screenToFlowPosition } = useReactFlow();
 
@@ -104,13 +112,19 @@ function EditorCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onSelectionChange={handleSelectionChange}
+        onBeforeDelete={onBeforeDelete}
+        onNodeDragStart={onNodeDragStart}
         fitView
         snapToGrid
         snapGrid={[16, 16]}
       >
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#cbd5e1" />
         <Controls />
-        <MiniMap pannable zoomable />
+        <MiniMap
+          pannable
+          zoomable
+          nodeColor={(node: Node) => MINIMAP_COLORS[node.type ?? "task"] ?? "#94a3b8"}
+        />
       </ReactFlow>
     </div>
   );

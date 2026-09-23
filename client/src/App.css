@@ -44,3 +44,12 @@
   grid-template-columns: 220px minmax(0, 1fr) 280px;
   gap: 0.75rem;
 }
+
+/* Columna derecha: panel de propiedades + validación apilados. */
+.app__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  overflow-y: auto;
+}
