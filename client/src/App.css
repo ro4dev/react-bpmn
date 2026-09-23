@@ -1,26 +1,46 @@
 .app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  padding: 3rem 2rem;
-  max-width: 960px;
-  margin: 0 auto;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  box-sizing: border-box;
+}
+
+.app__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
 }
 
 .app__header h1 {
   margin: 0;
-  font-size: 2.5rem;
+  font-size: 1.5rem;
 }
 
 .app__tagline {
   color: #666;
-  margin: 0.25rem 0 0;
+  margin: 0;
+  font-size: 0.9rem;
 }
 
-.app__placeholder {
-  border: 1px dashed #aaa;
-  border-radius: 8px;
-  padding: 2rem;
-  color: #666;
+.app__file-input {
+  display: none;
+}
+
+.app__message {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #1e3a8a;
+  font-size: 0.85rem;
+}
+
+.app__workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  gap: 0.75rem;
 }

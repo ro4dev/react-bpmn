@@ -1,0 +1,223 @@
+/* Editor visual: paleta, canvas, nodos y panel de propiedades. */
+
+/* --- Paleta --- */
+
+.rb-palette,
+.rb-properties {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.rb-palette__title,
+.rb-properties__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+
+.rb-palette__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rb-palette__item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  cursor: grab;
+  text-align: left;
+  font: inherit;
+}
+
+.rb-palette__item:active {
+  cursor: grabbing;
+}
+
+.rb-palette__item-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.rb-palette__item-desc {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+/* --- Toolbar --- */
+
+.rb-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rb-toolbar__button {
+  padding: 0.4rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.rb-toolbar__button:hover {
+  background: #f1f5f9;
+}
+
+/* --- Canvas --- */
+
+.rb-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+/* --- Nodos --- */
+
+.rb-node {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  min-height: 48px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.rb-node__label {
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.rb-node--selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 25%);
+}
+
+/* Inicio: círculo verde. */
+.rb-node--start,
+.rb-node--end {
+  width: 56px;
+  height: 56px;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 11px;
+}
+
+.rb-node--start {
+  background: #ecfdf5;
+  border-color: #059669;
+}
+
+/* Fin: círculo rojo con borde doble. */
+.rb-node--end {
+  background: #fef2f2;
+  border-color: #dc2626;
+  border-width: 4px;
+}
+
+/* Decisión: rombo (cuadrado rotado) sobre un contenedor invisible. */
+.rb-node--decision {
+  width: 110px;
+  height: 110px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+}
+
+.rb-node--decision .rb-node__shape {
+  position: absolute;
+  inset: 0;
+  background: #fffbeb;
+  border: 2px solid #b45309;
+  border-radius: 6px;
+  transform: rotate(45deg) scale(0.7071);
+}
+
+.rb-node--decision .rb-node__label {
+  position: relative;
+  z-index: 1;
+  max-width: 76px;
+}
+
+.rb-node--decision.rb-node--selected .rb-node__shape {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 25%);
+}
+
+/* --- Propiedades --- */
+
+.rb-properties__empty {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.rb-properties__kind {
+  font-size: 0.8rem;
+  color: #475569;
+  margin: 0 0 0.75rem;
+}
+
+.rb-properties__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.rb-properties__field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.rb-properties__field input,
+.rb-properties__field textarea {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.85rem;
+  background: #fff;
+  color: #0f172a;
+}
+
+.rb-properties__field textarea {
+  resize: vertical;
+}
