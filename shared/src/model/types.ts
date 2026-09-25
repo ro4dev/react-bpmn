@@ -49,3 +49,59 @@ export const PROCESS_NODE_KINDS: readonly ProcessNodeKind[] = [
   "task",
   "decision",
 ];
+
+// --- Auth & Colaboración (Fase 4) ---
+
+/** Usuario del sistema. */
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string | null;
+  createdAt: string;
+}
+
+/** Rol en un proceso. */
+export type Role = "owner" | "editor" | "viewer";
+
+/** Colaborador en un proceso. */
+export interface ProcessCollaborator {
+  processId: string;
+  userId: string;
+  role: Role;
+  invitedAt: string;
+}
+
+/** Invitación pendiente. */
+export interface Invitation {
+  id: string;
+  email: string;
+  processId: string;
+  role: Exclude<Role, "owner">;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/** Payload del JWT access token. */
+export interface JWTPayload {
+  sub: string;      // userId
+  email: string;
+  name: string;
+  iat?: number;
+  exp?: number;
+}
+
+/** Tokens de autenticación. */
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+/** Input para crear proceso (Fase 4: incluye ownerId). */
+export interface CreateProcessInput {
+  name: string;
+  model: ProcessModel;
+  comment?: string;
+  ownerId: string;
+}
