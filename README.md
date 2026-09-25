@@ -31,8 +31,10 @@ Toda la documentación del proyecto vive en [`docs/`](./docs/), en formato `.md`
 | Capa | Tecnología |
 | --- | --- |
 | Frontend | React 19 + Vite 8 + TypeScript |
-| Modelador visual | React Flow (`@xyflow/react`) | 12.x | Instalado (Fase 1) |
+| Modelador visual | React Flow (`@xyflow/react`) 12.x (Fase 1) |
 | Backend | Node + Express 5 + TypeScript |
+| **Base de datos** | **node:sqlite nativo** (`DatabaseSync`, Fase 3) |
+| Modelo compartido | `shared/` vía alias `@shared/*` (Fase 3) |
 | Lint | oxlint |
 | Dev | `concurrently` (levanta client y server juntos) |
 
@@ -42,6 +44,7 @@ Toda la documentación del proyecto vive en [`docs/`](./docs/), en formato `.md`
 react-bpmn/
 ├── client/   → Frontend (Vite + React + TS)
 ├── server/   → API (Express + TS)
+├── shared/   → Modelo + validación compartida (Fase 3)
 └── docs/     → Documentación (.md)
 ```
 
@@ -65,12 +68,14 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 
 ## Estado del proyecto
 
-**Fase actual: 2 — Maduración del editor** ✅ (siguiente: Fase 3 — persistencia en server)
+**Fase actual: 3 — Persistencia en server** ✅ (siguiente: Fase 4 — colaboración)
 
 - **Editor visual**: canvas React Flow con paleta (**Inicio, Fin, Tarea, Decisión**), drag-and-drop de nodos, conexiones, minimapa, snap-to-grid y panel de propiedades.
 - **Validación en tiempo real**: panel de issues (errores/advertencias) al modelar — ver `client/src/lib/validation/`.
 - **Deshacer/rehacer**: historial de snapshots con `Ctrl+Z` / `Ctrl+Shift+Z` y botones (AD-012).
 - **Exportación**: PNG/SVG del diagrama con `html-to-image` (AD-013).
 - **Guardado local** (`localStorage`) con autoguardado; exportar/importar el modelo como JSON.
-- La persistencia en server (CRUD + versionado) llega en la [Fase 3](./docs/10-roadmap.md).
+- **Persistencia server (Fase 3 ✅)**: CRUD `/api/processes` + versionado inmutable `ProcessVersion` + validación server-side con `validateProcess` compartido (`@shared/validation/`).
+- **Modelo compartido**: `shared/` (`ProcessModel` + `validateProcess`) consumido por client y server vía alias `@shared/*` (AD-015).
+- **Base de datos**: SQLite nativo (`node:sqlite` + `DatabaseSync`) en `server/src/db/` (AD-010, AD-014).
 - Planificación con OpenSpec: changes archivados en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).

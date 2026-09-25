@@ -37,18 +37,24 @@ Objetivo: poder **dibujar un proceso** en el navegador.
 
 > Implementado y archivado en OpenSpec (`openspec/changes/archive/`). Validación manual opcional por parte del usuario: deshacer/rehacer en vivo, panel de validación ante un modelo incompleto, y exportación PNG/SVG.
 
-## Fase 3 — Persistencia en server ⏳
+## Fase 3 — Persistencia en server ✅
 
-- [ ] Definir motor de base de datos (ver AD-010)
-- [ ] CRUD de procesos (`/api/processes`)
-- [ ] Versionado de procesos (`ProcessVersion`)
-- [ ] Listado y búsqueda de procesos en el client
+- [x] Motor de base de datos: **SQLite nativo** (`node:sqlite` + `DatabaseSync`) — AD-010 adoptada
+- [x] Capa de datos aislada: `server/src/db/` (`schema.ts` + `processStore.ts`) — AD-014
+- [x] CRUD de procesos: `POST/GET/GET:id/PUT/DELETE /api/processes`
+- [x] Versionado inmutable: `ProcessVersion` + `GET /:id/versions` + `GET /:id/versions/:v` — AD-016
+- [x] Validación server-side: `validateProcess` compartido (`@shared/validation/`) → 400 si inválido
+- [x] Modelo compartido: `shared/` (`ProcessModel` + `validateProcess`) vía alias `@shared/*` — AD-015
+- [x] Listado y búsqueda de procesos en el client (`ProcessList` + búsqueda `?q=`)
+- [x] Guardar/cargar desde el editor + versión visible (`vN` en toolbar)
+
+> Implementado y archivado en OpenSpec (`openspec/changes/archive/`). Validación: `npm run lint` 0/0 + `npm run build` OK en client y server.
 
 ## Fase 4 — Colaboración y publicación ⏳
 
-- [ ] Usuarios y autenticación
+- [ ] Usuarios y autenticación (AD-008)
 - [ ] Compartir procesos (link público / permisos)
-- [ ] Historial de cambios por versión
+- [ ] Historial de cambios por versión (UI timeline)
 
 ## Fase 5 — Ejecución (en evaluación) ⏳
 

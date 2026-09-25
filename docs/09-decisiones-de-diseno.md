@@ -15,10 +15,13 @@
 | [AD-007](#ad-007-puertos-y-proxy-de-desarrollo) | Server en 4000, client en 5173 con proxy `/api` | ✅ adoptada |
 | [AD-008](#ad-008-alcance-modelar-vs-ejecutar) | ¿Solo modelar o también ejecutar procesos? | ⏳ abierta |
 | [AD-009](#ad-009-estado-global) | Estado global del frontend | ✅ adoptada (Fase 2: estado local con hooks) |
-| [AD-010](#ad-010-base-de-datos) | Motor de persistencia del server | ⏳ abierta (Fase 3) |
+| [AD-010](#ad-010-base-de-datos) | Motor de persistencia del server | ✅ **adoptada (Fase 3: SQLite nativo)** |
 | [AD-011](#ad-011-estado-de-trabajo-del-editor-vs-modelo) | Estado de trabajo del editor (React Flow) vs modelo persistible | ✅ adoptada (Fase 1) |
 | [AD-012](#ad-012-historial-de-snapshots-para-deshacerrehacer) | Deshacer/rehacer con snapshots en el historial | ✅ adoptada (Fase 2) |
 | [AD-013](#ad-013-exportacion-de-imagen-con-html-to-image) | Exportación PNG/SVG con `html-to-image` | ✅ adoptada (Fase 2) |
+| [AD-014](#ad-014-capa-de-datos-aislada-sqlite) | Capa de datos SQLite aislada (`server/src/db/`) | ✅ adoptada (Fase 3) |
+| [AD-015](#ad-015-modelo-compartido-shared) | Modelo + validación pura en `shared/` con alias `@shared/*` | ✅ adoptada (Fase 3) |
+| [AD-016](#ad-016-versionado-inmutable-procesos) | Versionado inmutable por guardado (`ProcessVersion`) | ✅ adoptada (Fase 3) |
 
 ---
 
@@ -123,3 +126,47 @@
 **Decisión:** el **estado de trabajo** del editor es el `{nodes, edges}` de React Flow (con `kind` y `props` en `node.data`), y el `ProcessModel` es el **formato de persistencia/exportación/importación**: la serialización `modelo ⇄ React Flow` vive en un solo lugar (`client/src/lib/model/serialize.ts`), con validación de forma en runtime.
 
 **Consecuencias:** cero sincronización duplicada en una fase sin colaboración ni versionado. Si en la Fase 2 el estado global (AD-009) o el versionado (Fase 3) lo piden, `serialize.ts` es el punto único a reutilizar para mantener el `ProcessModel` como fuente de verdad.
+---
+
+### AD-010: Base de datos
+
+**Contexto:** la persistencia definitiva de procesos (Fase 3) necesita un motor.
+
+**Decisión:** ✅ **Adoptada (Fase 3): SQLite nativo (`node:sqlite` con `DatabaseSync`)**. Cero dependencias, cero compilación nativa, verificado en Node 25.8.1. La capa de datos queda aislada en `server/src/db/` (`schema.ts` + `processStore.ts`). La DB vive en `server/data/processes.db` (gitignored).
+
+**Consecuencias:** operativo inmediato sin infra; escalable a Postgres cambiando solo la capa `db/` (AD-014). El `node:sqlite` síncrono simplifica el código vs. async pool. La limitación: no concurrencia pesada (no requerida en Fase 3–4).
+
+---
+
+### AD-014: Capa de datos aislada (SQLite)
+
+**Contexto:** la persistencia server necesita un lugar claro y reemplazable.
+
+**Decisión:** ✅ **Adoptada (Fase 3):** todo el acceso a SQLite encapsulado en `server/src/db/`:
+- `schema.ts`: `CREATE TABLE IF NOT EXISTS Process + ProcessVersion` + índices.
+- `processStore.ts`: `ProcessStore` class con `DatabaseSync` + CRUD + versionado inmutable.
+- API pura: `create/list/get/update/delete + listVersions/getVersion`.
+
+**Consecuencias:** cero SQL en las rutas; testeo aislado (`:memory:`); migración futura a Postgres = solo reimplementar `ProcessStore` con `pg`/`kysely`. `DatabaseSync` síncrono evita callback hell y `await` en código que no necesita concurrencia real.
+
+---
+
+### AD-015: Modelo compartido `shared/`
+
+**Contexto:** client y server necesitan el mismo `ProcessModel` + `validateProcess` para que el server valide lo que el client envía (misma lógica, 0 duplicación).
+
+**Decisión:** ✅ **Adoptada (Fase 3):** `shared/` en la raíz del monorepo con `src/model/types.ts` + `src/validation/validateProcess.ts`. Consumido vía **path alias TypeScript**:
+- Client: `vite.config.ts` `resolve.alias["@shared"]` + `tsconfig.app.json` `paths`.
+- Server: `tsconfig.json` `baseUrl: "."`, `paths: { "@shared/*": ["../shared/src/*"] }`, `rootDir: ".."`, `include: ["src", "../shared/src"]` → emite `dist/server/...` + `dist/shared/...`; `start` ajustado a `node dist/server/src/index.js`.
+
+**Consecuencias:** una sola fuente de verdad (sin `shared/` como paquete publicado ni build intermedio). El fallback documentado (copia server-local en `server/src/lib/validation/`) quedó como nota; el alias funciona limpio. `verbatimModuleSyntax` y `erasableSyntaxOnly` respetados.
+
+---
+
+### AD-016: Versionado inmutable por guardado
+
+**Contexto:** cada guardado en server debe crear una versión histórica, no sobrescribir.
+
+**Decisión:** ✅ **Adoptada (Fase 3):** tabla `ProcessVersion` (PK compuesta `processId, version`) con `model` JSON + `comment` + `createdAt`. `Process.currentVersion` apunta a la última. `PUT /api/processes/:id` → `version+1` + `INSERT ProcessVersion` (no `UPDATE`). API de versiones: `GET /:id/versions` (metadatos DESC) + `GET /:id/versions/:v` (modelo completo).
+
+**Consecuencias:** historial completo y auditable sin lógica compleja. El `comment` opcional permite "mensajes de commit". El cliente expone `vN` en la toolbar y lista versiones en la API (UI de timeline: Fase 4).

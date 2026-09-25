@@ -11,35 +11,46 @@
 | TypeScript | 6.x | Tipado estático |
 | tsx | 4.x | Dev server con hot reload |
 | oxlint | 1.x | Lint |
+| **node:sqlite** | **nativo** | **Base de datos (Fase 3)** |
 
-## Qué hay hoy (Fase 0)
+## Qué hay hoy (Fase 3)
 
 ```
 server/src/
-├── index.ts          → Entry point: app.listen(PORT)
-├── app.ts            → Config de Express (CORS, JSON, rutas, 404)
-└── routes/
-    └── health.ts     → GET /api/health
+├── index.ts              → Entry point: inicializa DB + app.listen(PORT)
+├── app.ts                → Config de Express (CORS, JSON, rutas, 404)
+├── routes/
+│   ├── health.ts         → GET /api/health
+│   └── processes.ts      → CRUD + versionado /api/processes
+└── db/
+    ├── schema.ts         → CREATE TABLE Process + ProcessVersion
+    └── processStore.ts   → DatabaseSync CRUD + versionado inmutable
 ```
+
+### Inicialización de base de datos
+
+- Al arrancar (`index.ts`), se crea el store (`server/src/db/processStore.ts`) y se ejecuta `initSchema()`.
+- La DB SQLite se crea en `server/data/processes.db` (gitignored; ver `.gitignore`).
+- Motor: `node:sqlite` nativo (`DatabaseSync`) — cero dependencias, cero compilación nativa, verificado en Node 25.8.1.
 
 ### Por qué `app.ts` y `index.ts` separados
 
 - `app.ts` exporta la app **sin** llamar a `listen()`.
 - Eso permite escribir tests de integración (p. ej. con `supertest`) sin ocupar un puerto real.
-- `index.ts` es el único lugar con `listen()`.
+- `index.ts` es el único lugar con `listen()` (y ahora la inicialización de DB).
 
 ## Estructura futura (a medida que crezcan los dominios)
 
 ```
 server/src/
-├── index.ts              → Entry point
+├── index.ts              → Entry point + init DB
 ├── app.ts                → Config de Express
 ├── routes/               → Definición de endpoints por dominio
 │   ├── health.ts
-│   └── processes.ts      → CRUD de procesos (Fase 3)
+│   └── processes.ts      → CRUD + versionado (Fase 3 ✅)
 ├── controllers/          → Handlers de los endpoints (usan services)
 ├── services/             → Lógica de negocio (no sabe de HTTP)
-├── models/               → Capa de datos / persistencia
+├── models/               → Capa de datos / persistencia (Fase 3: ver `db/`)
 └── middleware/           → Validación, manejo de errores, auth (cuando aplique)
 ```
 
@@ -48,7 +59,7 @@ server/src/
 - **ESM puro**: `"type": "module"` en `package.json`; imports relativos con extensión `.js` (p. ej. `import { app } from "./app.js"`), que tsx resuelve a `.ts` en dev y Node a `.js` en el build.
 - **Montar rutas bajo `/api/<dominio>`** en `app.ts`.
 - Respuestas JSON consistentes: `{ "error": "..." }` para errores, recursos directos para éxito (ver [07 — API](./07-api.md)).
-- Tipos del dominio compartidos con el frontend (ver [08 — Modelo de datos](./08-modelo-de-datos.md)).
+- Tipos del dominio compartidos con el frontend vía `shared/` (ver [08 — Modelo de datos](./08-modelo-de-datos.md)).
 
 ## Variables de entorno
 
