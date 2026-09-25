@@ -65,6 +65,7 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .rb-toolbar__button {
@@ -75,6 +76,23 @@
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+.rb-toolbar__button--nav {
+  background: #f1f5f9;
+  color: #475569;
+}
+.rb-toolbar__button--nav:hover {
+  background: #e2e8f0;
+}
+
+.rb-toolbar__button--server {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #93c5fd;
+}
+.rb-toolbar__button--server:hover {
+  background: #bfdbfe;
 }
 
 .rb-toolbar__button:hover {
@@ -95,6 +113,27 @@
   width: 1px;
   height: 1.4rem;
   background: #cbd5e1;
+}
+
+.rb-toolbar__version-badge {
+  align-self: center;
+  padding: 0.2rem 0.5rem;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.rb-toolbar__process-id {
+  align-self: center;
+  padding: 0.2rem 0.4rem;
+  background: #f1f5f9;
+  color: #64748b;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 /* --- Canvas --- */
