@@ -112,7 +112,7 @@ function App() {
 
   // --- Navegación List ⇄ Editor ---
   const handleOpenProcess = useCallback(
-    (meta: { id: string; name: string }) => {
+    (meta: { id: string; name: string; currentVersion: number }) => {
       // Cargar modelo desde server
       void (async () => {
         try {
@@ -123,10 +123,10 @@ function App() {
             setMessage("El proceso guardado tiene un formato inválido.");
             return;
           }
-          editor.loadModel(model);
+          editor.loadModel(model, meta.currentVersion);
           setEditingProcessId(meta.id);
           setView("editor");
-          setMessage(`Proceso "${meta.name}" cargado desde el servidor.`);
+          setMessage(`Proceso "${meta.name}" cargado desde el servidor (v${meta.currentVersion}).`);
         } catch {
           setMessage("Error al abrir el proceso.");
         }
@@ -156,7 +156,7 @@ function App() {
           ? undefined // mantendrá el nombre existente
           : prompt("Nombre del proceso:") || "Sin nombre",
         model: editor.model,
-        comment: `Guardado manual v${editor.model.version + 1 || 1}`,
+        comment: `Guardado manual`,
       };
       const url = editingProcessId
         ? `/api/processes/${editingProcessId}`
@@ -174,11 +174,12 @@ function App() {
       }
       const saved = await res.json();
       setEditingProcessId(saved.id);
+      editor.setVersion(saved.currentVersion);
       setMessage(`Proceso guardado en servidor (v${saved.currentVersion}).`);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Error guardando en servidor");
     }
-  }, [editor.model, editingProcessId]);
+  }, [editor, editingProcessId]);
 
   return (
     <ReactFlowProvider>
@@ -203,7 +204,7 @@ function App() {
               onSaveServer={handleSaveToServer}
               onBackToList={handleBackToList}
               editingProcessId={editingProcessId}
-              currentVersion={editor.model?.version ?? 1}
+              currentVersion={editor.serverVersion ?? 1}
             />
 
             <input

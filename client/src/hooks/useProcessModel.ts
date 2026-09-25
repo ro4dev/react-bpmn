@@ -1,6 +1,6 @@
 /**
  * Hook del editor: estado de nodos/aristas + historial de deshacer/rehacer +
- * persistencia local (autoguardado debounced en localStorage).
+ * persistencia local (autoguardado debounced en localStorage) + versión server.
  *
  * El historial guarda snapshots del estado de trabajo `{nodes, edges}` (ver
  * AD-012): un checkpoint por acción discreta (agregar, conectar, eliminar,
@@ -60,12 +60,13 @@ function loadSavedModel(): { nodes: FlowNode[]; edges: Edge[] } | null {
 /** Modelo inicial: se lee una sola vez al cargar el módulo. */
 const initialModel = loadSavedModel();
 
-/** Estado del editor + historial + persistencia local. */
+/** Estado del editor + historial + persistencia local + versión server. */
 export function useProcessModel() {
   const [nodes, setNodes] = useState<FlowNode[]>(() => initialModel?.nodes ?? []);
   const [edges, setEdges] = useState<Edge[]>(() => initialModel?.edges ?? []);
   const [past, setPast] = useState<Snapshot[]>([]);
   const [future, setFuture] = useState<Snapshot[]>([]);
+  const [serverVersion, setServerVersion] = useState<number | null>(null);
   const lastEditAtRef = useRef(0);
 
   const model = useMemo(() => toProcessModel(nodes, edges), [nodes, edges]);
@@ -203,15 +204,19 @@ export function useProcessModel() {
     [pushCheckpoint],
   );
 
-  /** Reemplaza el modelo completo (importación) y limpia el historial. */
-  const loadModel = useCallback((next: ProcessModel) => {
+  /** Reemplaza el modelo completo (importación/carga server) y limpia el historial. */
+  const loadModel = useCallback((next: ProcessModel, version?: number) => {
     const restored = fromProcessModel(next);
     setNodes(restored.nodes);
     setEdges(restored.edges);
     setPast([]);
     setFuture([]);
+    setServerVersion(version ?? null);
     lastEditAtRef.current = 0;
   }, []);
+
+  /** Establece la versión del server (cuando se carga/guarda). */
+  const setVersion = useCallback((v: number) => setServerVersion(v), []);
 
   return {
     nodes,
@@ -230,6 +235,8 @@ export function useProcessModel() {
     redo,
     canUndo: past.length > 0,
     canRedo: future.length > 0,
+    serverVersion,
+    setVersion,
   };
 }
 
