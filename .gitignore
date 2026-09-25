@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# SQLite database (server persistence)
+server/data/
+
 # Variables de entorno / secretos
 .env
 .env.*
