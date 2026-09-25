@@ -9,7 +9,20 @@
 
 .app__header {
   display: flex;
-  align-items: baseline;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.app__header-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.app__header-right {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
 }
 
@@ -19,9 +32,9 @@
 }
 
 .app__tagline {
-  color: #666;
+  color: #64748b;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .app__file-input {
@@ -52,4 +65,110 @@
   gap: 0.75rem;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* --- User Menu (Fase 4) --- */
+
+.rb-user-menu {
+  position: relative;
+}
+
+.rb-user-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rb-user-menu__trigger:hover {
+  background: #f1f5f9;
+}
+
+.rb-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.rb-user-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.rb-user-name {
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.rb-user-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.rb-user-menu__header {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.rb-user-menu__header strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.rb-user-menu__header small {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
+.rb-user-menu__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.85rem;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.rb-user-menu__item:hover {
+  background: #f1f5f9;
+}
+
+.rb-user-menu__item--danger {
+  color: #dc2626;
+}
+.rb-user-menu__item--danger:hover {
+  background: #fef2f2;
 }
