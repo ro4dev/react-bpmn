@@ -8,6 +8,7 @@ import cors from "cors";
 import express from "express";
 
 import { healthRouter } from "./routes/health.js";
+import { processesRouter } from "./routes/processes.js";
 
 export const app = express();
 
@@ -15,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/health", healthRouter);
+app.use("/api/processes", processesRouter);
 
 // 404 para rutas no definidas
 app.use((_req, res) => {
