@@ -64,18 +64,20 @@ Ninguna es un trabajo pendiente salvo lo último.
 | 1.2 | `findUserByEmail` | `findByEmail` | Nombre, no comportamiento. |
 | 1.3 | `403` si el usuario fue borrado | `401` solo si el token no valida; un access token de un usuario borrado sigue sirviendo hasta expirar (15 min) | `authRequired` no consulta la DB en cada request a propósito: es un lookup por request que el server evita. El peor caso son 15 min de acceso con un token ya emitido. |
 | 2.1 | Sin permiso → `403` | Sin acceso → **`404`**; `403` solo cuando el acceso existe pero la acción no corresponde (p. ej. viewer intenta guardar) | Un `403` confirma que el proceso existe. Con `404` no se revela la existencia de procesos ajenos. El `403` por rol sí se mantiene, porque el usuario ya sabe que existe. |
-| 2.1 | Caché del permiso en memoria por request | `canAccess` consulta por llamada | Cada request hace una consulta a la vez (`roleOf` → owner y colaborador), así que la caché no ahorraba nada. A escala de lista es N+1; si aparece el problema, se resuelve con un `JOIN` en `list`. |
+| 2.1 | Caché del permiso en memoria por request | `canAccess` memoizado por request con `AsyncLocalStorage` (`db/roleCache.ts`), invalidado por toda mutación de roles | La primera implementación consultaba por llamada; se cerró después, con los "pendientes menores" de abajo. No es un `Map` en el store a propósito: una caché global serviría permisos viejos si un owner cambia un rol a mitad de vuelo. |
 | 2.4 | `setCollaborators(processId, collaborators[])` | No se implementó | La UI invita de a uno; un setter en lote no tenía consumidor. En su lugar: `addCollaborator`, `removeCollaborator`, `getCollaborators`, `canAccess`, más `roleOf` y `addCollaboratorDirect`. |
 | 4.1 | Fallback a `localStorage` si no hay cookie | Sin fallback; el access token vive solo en memoria | Un refresh token en `localStorage` es accesible a cualquier XSS; la cookie httpOnly no. Sin cookie, la sesión se pierde y el usuario vuelve a hacer login: es el comportamiento correcto. Ver AD-017. |
-| 5.1 | La lista de versiones muestra `authorName` | **No se implementó** | `ProcessVersion` no guarda quién creó la versión. Es el único faltante real: agregarlo requiere columna + migración y decisión de si el viewer puede ver el nombre del autor. Ver "Pendientes" abajo. |
+| 5.1 | La lista de versiones muestra `authorName` | Implementado después: columnas `authorId` + `authorName` en `ProcessVersion` | `ProcessVersion` no guardaba el autor. Se agregó con migración idempotente y `authorName` desnormalizado (FK `ON DELETE SET NULL` + nombre copiado) para no perder la autoría si el usuario se borra. Ver "Pendientes menores", ya cerrado. |
 | 5.4 | `inviteCollaborator`, `acceptInvitation` en `processes.ts` | `invite`, `listCollaborators`, `removeCollaborator` en `processes.ts`; `acceptInvitation` en `auth.ts` | `acceptInvitation` habla de invitaciones, no de un proceso: va con la autenticación. |
 | 6.1 | AD-017 a AD-020 | Se agregó además **AD-021** | Hash SHA-256 para tokens opacos: la primera implementación hasheaba el refresh con bcrypt y comparaba contra el `id` de la fila, así que la rotación no revocaba nada. La decisión merecía su propio ADR. |
 | 6.3 | `openspec validate --all` → 2 passed | 5 passed | Las specs de las fases anteriores también cuentan. |
 
-## Pendientes menores
+## Pendientes menores — cerrados
 
-Ninguno bloquea la Fase 4; quedan para cuando se toque el código:
+Los tres se resolvieron después del archivado, con tests que los cubren:
 
-1. **`authorName` en el historial** (5.1) — `ProcessVersion` no registra el autor. El diff y la restauración funcionan; solo falta mostrar quién hizo cada versión.
-2. **N+1 en el cálculo de roles** (2.1) — `ProcessStore.list` consulta `roleOf` una vez por proceso. Con muchos procesos por usuario, un `LEFT JOIN` lo resuelve.
-3. **`canAccess` sin caché en el mismo request** (2.1) — varias llamadas por request (p. ej. `getMeta` + `getVersion`) repiten el chequeo de rol.
+1. ~~**`authorName` en el historial** (5.1)~~ ✅ `ProcessVersion` ahora tiene `authorId` + `authorName` (migración idempotente con `addColumnIfMissing`). `authorName` está desnormalizado a propósito: `authorId` queda en `null` si el usuario se borra, pero el historial conserva el nombre; sin eso se perdería la autoría de versiones viejas. La UI lo muestra junto a la fecha y en el detalle. El viewer **sí** puede verlo: el nombre no es un dato sensible y el historial ya es legible para cualquiera con acceso de lectura.
+2. ~~**N+1 en el cálculo de roles** (2.1)~~ ✅ `ProcessStore.list` resuelve el rol con un `LEFT JOIN` a `ProcessCollaborator` (más `versionCount` y el modelo de la última versión como subconsultas correlacionadas): una sola sentencia en vez de 1 + 3N.
+3. ~~**`canAccess` sin caché en el mismo request** (2.1)~~ ✅ `roleOf` memoiza por request vía `AsyncLocalStorage`, con invalidación en toda mutación de roles.
+
+Cubiertos por `server/test/store-unit.ts` (18 aserciones), `server/test/e2e-fase4.ts` (47) y `client/test/model-diff.test.ts` (12).

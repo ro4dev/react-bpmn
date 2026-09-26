@@ -85,8 +85,8 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 - **Persistencia server (Fase 3 ✅)**: CRUD `/api/processes` + versionado inmutable `ProcessVersion` + validación server-side con `validateProcess` compartido.
 - **Usuarios y sesión (Fase 4 ✅)**: registro/login propio con bcrypt (12 rondas), access token JWT de 15 min en memoria y refresh token opaco de 7 días en cookie httpOnly, con rotación (AD-017).
 - **Colaboración (Fase 4 ✅)**: permisos por proceso con roles `owner` / `editor` / `viewer`; invitación por email (directa si el usuario existe, por token firmado de 7 días si todavía no se registró); el listado filtra Míos / Compartidos / Todos (AD-018, AD-019).
-- **Historial visible (Fase 4 ✅)**: panel lateral con el diff semántico entre versiones y restauración que crea una versión nueva sin borrar el historial (AD-020).
+- **Historial visible (Fase 4 ✅)**: panel lateral con el diff semántico entre versiones, el autor de cada guardado y restauración que crea una versión nueva sin borrar el historial (AD-020).
 - **Modelo compartido**: `shared/` (`ProcessModel` + `validateProcess`) consumido por client y server (AD-015).
 - **Base de datos**: SQLite nativo (`node:sqlite` + `DatabaseSync`) en `server/src/db/`, modo WAL (AD-010, AD-014).
-- **Tests**: suite end-to-end de la API con 40 aserciones — `npm --prefix server run test:e2e`.
+- **Tests**: `npm test` corre las tres suites — 47 aserciones end-to-end de la API, 18 de unidad del `ProcessStore` (autoría, caché de roles, consultas) y 12 del diff semántico. Sin framework de tests: `node:test` + `--experimental-strip-types`.
 - Planificación con OpenSpec: changes archivados en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).

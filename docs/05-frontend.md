@@ -21,7 +21,7 @@
 - Listado de procesos con búsqueda y filtro Míos / Compartidos / Todos, con badge de rol.
 - Autenticación: páginas de login/registro/perfil, header global con menú de usuario, rutas protegidas (`ProtectedRoute`) y públicas (`PublicRoute`).
 - Compartir: modal de colaboradores con invitaciones por email y pendientes.
-- Historial: panel lateral con diff entre versiones y restauración.
+- Historial: panel lateral con diff entre versiones, autor de cada guardado y restauración.
 - Dev en `localhost:5173` con proxy `/api` a la API en 4000.
 
 ## Estructura de `src/` (Fase 4)
@@ -43,7 +43,7 @@ src/
 │   └── processes/
 │       ├── ProcessList.tsx     → Tabla de procesos + búsqueda + filtro por alcance
 │       ├── ShareModal.tsx      → Colaboradores e invitaciones
-│       ├── VersionHistory.tsx  → Panel lateral de versiones con diff y restauración
+│       ├── VersionHistory.tsx  → Panel lateral de versiones con autor, diff y restauración
 │       └── *.css
 ├── hooks/
 │   └── useProcessModel.ts  → Estado del editor + historial deshacer/rehacer + autoguardado

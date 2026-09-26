@@ -57,7 +57,7 @@ Motor: SQLite nativo (`node:sqlite` + `DatabaseSync`) en modo **WAL**. Esquema e
 | Entidad | Tabla | Campos | Notas |
 | --- | --- | --- | --- |
 | `Process` | `Process` | `id` (PK), `name`, `currentVersion`, `ownerId` (FK), `createdAt`, `updatedAt` | Metadatos + versión actual + dueño |
-| `ProcessVersion` | `ProcessVersion` | `id` (PK auto), `processId` (FK), `version`, `model` (JSON), `comment`, `createdAt` | Versión inmutable por guardado; UNIQUE(processId, version) |
+| `ProcessVersion` | `ProcessVersion` | `id` (PK auto), `processId` (FK), `version`, `model` (JSON), `comment`, `authorId` (FK), `authorName`, `createdAt` | Versión inmutable por guardado; UNIQUE(processId, version) |
 | `User` | `User` | `id` (PK), `email` (UNIQUE), `passwordHash`, `name`, `avatar`, `createdAt` | Usuarios de la Fase 4 |
 | `ProcessCollaborator` | `ProcessCollaborator` | `processId` + `userId` (PK compuesta), `role`, `invitedAt` | Roles `editor` / `viewer` |
 | `Invitation` | `Invitation` | `id` (PK), `email`, `processId` (FK), `role`, `token`, `expiresAt`, `createdAt` | Invitación para emails sin cuenta |
@@ -74,6 +74,10 @@ User    1───* RefreshToken   (ON DELETE CASCADE)
 ```
 
 `Process.ownerId` es la **fuente de verdad** del rol `owner` (no hay fila en `ProcessCollaborator` para el dueño), y `roleOf()` lo prioriza sobre cualquier fila de colaboradores.
+
+`ProcessVersion.authorName` está **desnormalizado** a propósito: la FK `authorId` es `ON DELETE SET NULL`, así que si el usuario se borra el `authorId` queda en `null` — sin el nombre copiado, el historial perdería la autoría de versiones viejas en vez de mostrar "Usuario eliminado". La ruta manda el nombre de `req.user` y el store solo cae a consultar `User` si no le llega (llamadas directas, tests).
+
+Migraciones: `initSchema` es idempotente y agrega columnas con `addColumnIfMissing` (`PRAGMA table_info` + `ALTER TABLE`), porque SQLite no tiene `ADD COLUMN IF NOT EXISTS`. Hoy migra `Process.ownerId` y `ProcessVersion.authorId/authorName`.
 
 Índices:
 - `idx_process_updatedAt` (para listado ordenado)

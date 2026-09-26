@@ -122,9 +122,15 @@ Rechaza con **400** invitarse a uno mismo o al owner, y con **400** si el email 
 {
   "version": 3,
   "comment": "Ajuste decisión",
+  "authorId": "uuid-v4",
+  "authorName": "Ana",
   "createdAt": "2026-09-24T12:30:00.000Z"
 }
 ```
+
+`authorId` / `authorName` son de quien guardó la versión (el usuario autenticado en el momento del `POST`/`PUT`, también al restaurar). `authorName` está desnormalizado a propósito: si el usuario se borra, `authorId` queda en `null` (FK `ON DELETE SET NULL`) pero el historial conserva el nombre. Ambos en `null` = versiones anteriores a la Fase 4.
+
+**GET /api/processes/:id/versions/:v** devuelve lo mismo más `id` y `model` (el grafo completo de esa versión).
 
 ### Validación server-side
 

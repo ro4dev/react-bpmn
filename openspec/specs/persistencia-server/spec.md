@@ -1,7 +1,7 @@
 # persistencia-server Specification
 
 ## Purpose
-TBD - created by archiving change persistencia-procesos. Update Purpose after archive.
+Que el trabajo del editor sobreviva a recargar la página y a que se cierre el navegador. Cubre el almacenamiento del modelo de cada proceso en SQLite, el **versionado inmutable** (cada guardado agrega una versión; nada se sobrescribe) y el historial de versiones que permite ver qué cambió y volver a un estado anterior. Ver [AD-010](../../docs/09-decisiones-de-diseno.md) y [AD-014](../../docs/09-decisiones-de-diseno.md).
 
 ## Requirements
 

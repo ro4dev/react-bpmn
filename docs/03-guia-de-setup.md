@@ -49,6 +49,7 @@ Todos los comandos se corren **desde la raíz del repo**, salvo indicación cont
 | `npm run dev:client` | Levanta solo el frontend (Vite, puerto 5173) |
 | `npm run build` | Compila server y client a producción |
 | `npm run lint` | Lint de server y client (oxlint) |
+| `npm test` | Tests completos: store (server), e2e de la API y diff semántico (client) |
 | `npm run typecheck` | Typecheck de server (`tsc --noEmit`) + build del client |
 
 ### Comandos por aplicación
@@ -58,6 +59,7 @@ Todos los comandos se corren **desde la raíz del repo**, salvo indicación cont
 npm run dev        # Vite dev server
 npm run build      # tsc -b && vite build
 npm run lint       # oxlint
+npm run test       # tests del diff semántico (node:test, sin dependencias)
 npm run preview    # sirve el build anterior
 
 # Desde server/
@@ -66,6 +68,8 @@ npm run build      # tsc → dist/
 npm run start      # node dist/server/src/index.js
 npm run typecheck  # tsc --noEmit
 npm run lint       # oxlint
+npm run test       # build + test:unit + test:e2e
+npm run test:unit  # tests del ProcessStore (autoría, caché de roles, N+1)
 npm run test:e2e   # tests end-to-end de la API (Fase 4, DB temporal)
 ```
 

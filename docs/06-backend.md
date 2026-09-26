@@ -28,10 +28,12 @@ server/src/
 │   ├── processes.ts      → CRUD + versionado + colaboradores + invitaciones
 │   └── invitations.ts    → /api/invitations (accept, mine)
 ├── middleware/
-│   └── auth.ts           → authRequired / optionalAuth: valida el JWT y adjunta req.user
+│   ├── auth.ts           → authRequired / optionalAuth: valida el JWT y adjunta req.user
+│   └── roleCache.ts      → Abre la caché de roles del request
 └── db/
-    ├── schema.ts         → CREATE TABLE de las 6 tablas (idempotente)
+    ├── schema.ts         → CREATE TABLE de las 6 tablas (idempotente) + migraciones
     ├── singleton.ts      → Una sola conexión DatabaseSync por proceso
+    ├── roleCache.ts      → Caché de roles por request (AsyncLocalStorage)
     ├── authStore.ts      → Usuarios, sesiones e invitaciones
     └── processStore.ts   → CRUD + versionado + permisos por rol
 ```
@@ -55,9 +57,21 @@ server/src/
 - Todas las rutas de `/api/processes` pasan por `authRequired`; los permisos por rol los chequea `processStore.canAccess(userId, processId, action)` con las acciones `read` / `write` / `delete` / `manage_collaborators` (ver [AD-018](./09-decisiones-de-diseno.md)).
 - Un recurso al que el usuario no tiene acceso devuelve **404**, no 403: no se revela la existencia de procesos ajenos.
 
-### Tests end-to-end
+### Caché de roles y consultas del listado
 
-`npm --prefix server run test:e2e` compila y levanta la app contra una **DB temporal** (sin tocar `server/data/`) y ejercita el flujo completo con 40 aserciones: registro, login, refresh con rotación y reuso de token, permisos por rol, invitaciones firmadas (token alterado / email incorrecto / doble aceptación), versionado inmutable, restauración y logout.
+- `roleOf(userId, processId)` se llama varias veces por request (una ruta hace `getMeta` → `canAccess` → `roleOf`, y después `listVersions` → `canAccess` → `roleOf` otra vez). El middleware `roleCache` abre un scope con `AsyncLocalStorage` (`db/roleCache.ts`) y memoiza el resultado **por request**: no es un `Map` en el store, porque una caché global serviría permisos viejos si un owner cambia el rol de alguien a mitad de vuelo. Fuera de un request (tests, scripts) no hay caché. Toda mutación de roles (`addCollaborator`, `addCollaboratorDirect`, `removeCollaborator`, `delete`) invalida el scope, así que un request que acepta una invitación y después chequea permisos ve el rol nuevo.
+- `list()` resuelve **una sola sentencia**: el rol del solicitante sale de un `LEFT JOIN` a `ProcessCollaborator` (con `CASE` para que el owner gane siempre) y el `versionCount` y el modelo de la última versión, de subconsultas correlacionadas. Antes eran 1 + 3N consultas. `server/test/store-unit.ts` mide esto con el authorizer de SQLite comparando el conteo con 2 procesos contra el de 20.
+
+### Autoría de las versiones
+
+Cada `POST`/`PUT` (y también `restore`) manda `authorName` desde `req.user`; el store lo persiste junto al `authorId`. Si no viene, lo resuelve consultando `User` para no dejar la versión con `authorId` pero sin nombre. Ver [docs/08](08-modelo-de-datos.md#entidades-de-persistencia-✅-implementadas-fase-3--4).
+
+### Tests
+
+- `npm --prefix server run test:unit` — 18 aserciones sobre el `ProcessStore` con DB temporal: autoría (incluido el fallback a `User`), semántica de la caché de roles dentro de un mismo scope (que una mutación no deje el valor viejo) y conteo de sentencias para la regresión del N+1.
+- `npm --prefix server run test:e2e` — 47 aserciones de integración contra la app real.
+- `npm --prefix client run test` — 12 aserciones del diff semántico de grafo (`client/test/model-diff.test.ts`), sin dependencias: `node:test` + `--experimental-strip-types`.
+- `npm test` (raíz) corre los tres.
 
 ### Import del modelo compartido
 
