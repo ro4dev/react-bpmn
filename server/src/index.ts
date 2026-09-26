@@ -3,29 +3,12 @@
  * Levanta la aplicación Express en el puerto definido por PORT (default: 4000).
  * Carga el .env y valida la configuración crítica antes de escuchar.
  */
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 import { app } from "./app.js";
+import { loadEnv } from "./config/env.js";
 import { dbPath, getAuthStore, getProcessStore } from "./db/singleton.js";
-
-/** Carga server/.env sin dependencias externas (parser KEY=VALUE minimalista). */
-function loadEnv(): void {
-  const envPath = new URL("../.env", import.meta.url);
-  if (!existsSync(envPath)) return;
-
-  const content = readFileSync(envPath, "utf8");
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eq = trimmed.indexOf("=");
-    if (eq === -1) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const value = trimmed.slice(eq + 1).trim();
-    // No sobreescribe variables ya presentes en el entorno real.
-    if (process.env[key] === undefined) process.env[key] = value;
-  }
-}
 
 loadEnv();
 

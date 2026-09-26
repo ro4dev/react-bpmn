@@ -6,12 +6,14 @@
   "description": "API backend del modelador de procesos react-bpmn",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "seed": "tsx src/seed.ts",
     "build": "tsc",
     "start": "node dist/server/src/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",
-    "test": "npm run build && npm run test:unit && npm run test:e2e",
+    "test": "npm run build && npm run test:unit && npm run test:seed && npm run test:e2e",
     "test:unit": "npm run build && node --experimental-strip-types test/store-unit.ts",
+    "test:seed": "npm run build && node --experimental-strip-types test/seed-unit.ts",
     "test:e2e": "npm run build && node --experimental-strip-types test/e2e-fase4.ts"
   },
   "dependencies": {
