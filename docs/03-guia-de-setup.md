@@ -50,7 +50,8 @@ Todos los comandos se corren **desde la raíz del repo**, salvo indicación cont
 | `npm run seed` | Crea los datos de prueba (2 usuarios, 2 procesos, invitación) |
 | `npm run build` | Compila server y client a producción |
 | `npm run lint` | Lint de server y client (oxlint) |
-| `npm test` | Tests completos: store (server), seed, e2e de la API y diff semántico (client) |
+| `npm test` | Tests completos: store (server), seed, e2e de la API, diff semántico y **browser** |
+| `npm run test:ui` | Solo los tests de browser (Playwright) |
 | `npm run typecheck` | Typecheck de server (`tsc --noEmit`) + build del client |
 
 ### Comandos por aplicación
@@ -61,6 +62,7 @@ npm run dev        # Vite dev server
 npm run build      # tsc -b && vite build
 npm run lint       # oxlint
 npm run test       # tests del diff semántico (node:test, sin dependencias)
+npm run test:ui    # tests de browser con Playwright (Chrome del sistema)
 npm run preview    # sirve el build anterior
 
 # Desde server/
@@ -107,7 +109,22 @@ podés correrlo las veces que quieras sin duplicar datos.
 { "status": "ok", "timestamp": "2026-09-23T00:58:35.938Z" }
 ```
 
-4. Crear el primer usuario: abrí `http://localhost:5173/register` (la app redirige a `/login` si no hay sesión).
+4. Entrar: con `npm run seed` hecho, usar los botones de acceso rápido en
+   `/login`; sin seed, crear el primer usuario en `/register`.
+
+## Tests de browser
+
+`npm run test:ui` corre los flujos en un Chrome real (Playwright, usando el
+Chrome del sistema — no descarga nada). Levanta su propia API en el puerto 4100
+con una **DB temporal** y su propio Vite en el 5174, así que no toca tus datos
+de desarrollo ni los servidores que tengas levantados.
+
+Cubren lo que las suites de API no ven: que la sesión llegue de verdad, que
+recargar la página no cierre la sesión, el historial con autores y el modo
+lectura. Ese caso existe porque el login pasaba los tests de API pero en el
+browser la app volvía a `/login` sin error: al recargar salían dos
+`POST /api/auth/refresh` en paralelo, la rotación de refresh tokens invalidaba el
+token del primero, el segundo recibía 401 y eso borraba la sesión recién creada.
 
 ## Variables de entorno
 

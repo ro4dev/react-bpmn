@@ -58,7 +58,7 @@ Objetivo: poder **dibujar un proceso** en el navegador.
 - [x] Historial de cambios por versión: panel lateral con diff semántico contra la versión anterior y restauración que crea la N+1 ([AD-020](./09-decisiones-de-diseno.md))
 - [x] Listado con filtro Míos / Compartidos / Todos
 - [x] Autoría de cada versión en el historial (`ProcessVersion.authorId` + `authorName` desnormalizado)
-- [x] Tests: 47 aserciones end-to-end de la API (`npm --prefix server run test:e2e`), 18 de unidad del store, 12 del diff semántico — `npm test`
+- [x] Tests: 47 aserciones end-to-end de la API (`npm --prefix server run test:e2e`), 18 de unidad del store, 19 del seed, 12 del diff semántico y 7 de browser con Playwright (`npm run test:ui`) — `npm test` corre todo
 
 > Implementado y archivado en OpenSpec (`openspec/changes/archive/2026-09-25-colaboracion-publicacion`). Validación: `npm run lint` 0 errores + `npm run build` OK en client y server + las tres suites en verde. Los tres pendientes menores que quedaron al archivar (autoría, N+1 de `list()`, caché de roles por request) se cerraron después; están anotados en el `tasks.md` del change.
 

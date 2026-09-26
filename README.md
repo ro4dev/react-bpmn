@@ -99,5 +99,5 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 - **Modelo compartido**: `shared/` (`ProcessModel` + `validateProcess`) consumido por client y server (AD-015).
 - **Base de datos**: SQLite nativo (`node:sqlite` + `DatabaseSync`) en `server/src/db/`, modo WAL (AD-010, AD-014).
 - **Datos de prueba**: `npm run seed` siembra 2 usuarios, 2 procesos con historial de varios autores, colaboradores de ambos roles y una invitación pendiente — para recorrer la app sin registrar nada (ver [03 — Guía de setup](./docs/03-guia-de-setup.md)).
-- **Tests**: `npm test` corre las cuatro suites — 47 aserciones end-to-end de la API, 18 de unidad del `ProcessStore` (autoría, caché de roles, consultas), 19 del seed (idempotencia, modelos válidos) y 12 del diff semántico. Sin framework de tests: `node:test` + `--experimental-strip-types`.
+- **Tests**: `npm test` corre las cinco suites — 47 aserciones end-to-end de la API, 18 de unidad del `ProcessStore` (autoría, caché de roles, consultas), 19 del seed (idempotencia, modelos válidos), 12 del diff semántico y **7 tests de browser con Playwright** (sesión, recarga, historial con autores, modo lectura). Lógica: `node:test` + `--experimental-strip-types`, sin framework.
 - Planificación con OpenSpec: changes archivados en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).

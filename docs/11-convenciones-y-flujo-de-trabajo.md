@@ -47,8 +47,9 @@ Regla: **no commitear directo a `main`**. Flujo: rama feature → revisión → 
 1. Crear rama `feature/<descripcion>`.
 2. Implementar.
 3. Correr `lint` (+ `typecheck` si toca tipos).
-4. Actualizar documentación (docs/ + ADR si aplica).
-5. Mostrar el cambio al usuario para revisión (no commitear sin OK).
+4. Correr `npm test` (server + diff + **browser**).
+5. Actualizar documentación (docs/ + ADR si aplica).
+6. Mostrar el cambio al usuario para revisión (no commitear sin OK).
 
 ## Herramientas
 
@@ -57,4 +58,15 @@ Regla: **no commitear directo a `main`**. Flujo: rama feature → revisión → 
 | Editor visual | React Flow (`@xyflow/react`, Fase 1) |
 | Lint | oxlint |
 | Format | Prettier (a agregar si el usuario lo quiere) — hoy se mantiene el formato del template |
-| Tests | A definir (sugerencia: Vitest + Testing Library en client, supertest en server)
+| Tests de lógica | `node:test` + `--experimental-strip-types` (sin framework) |
+| Tests de API | `node:test` contra la app real con DB temporal |
+| Tests de browser | Playwright con el Chrome del sistema (`npm run test:ui`) |
+
+## Tests de browser (por qué existen)
+
+`npm run test:ui` levanta la app en un Chrome real y verifica los flujos que las
+suites de API **no pueden** ver: que la sesión llegue, que no salte el redirect a
+`/login`, que el historial muestre los autores. Ya pagaron por esa cobertura: el
+login funcionaba contra la API pero en el browser el refresh con rotación de
+token borraba la sesión y volvía a `/login` sin mostrar error (ver
+[03 — Guía de setup](./03-guia-de-setup.md)).
