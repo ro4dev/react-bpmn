@@ -124,6 +124,15 @@
   color: #64748b;
 }
 
+.rb-history__author {
+  color: #94a3b8;
+}
+
+.rb-history__detail-author {
+  font-weight: 400;
+  color: #94a3b8;
+}
+
 .rb-history__comment {
   font-size: 0.75rem;
   color: #475569;

@@ -26,6 +26,9 @@ export interface ProcessMeta {
 export interface ProcessVersionMeta {
   version: number;
   comment: string | null;
+  /** Quién guardó la versión. `authorId` es null si el usuario fue borrado. */
+  authorId: string | null;
+  authorName: string | null;
   createdAt: string;
 }
 
@@ -39,6 +42,8 @@ export interface ProcessVersionFull {
   version: number;
   model: ProcessModel;
   comment: string | null;
+  authorId: string | null;
+  authorName: string | null;
   createdAt: string;
 }
 

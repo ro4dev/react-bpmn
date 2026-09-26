@@ -35,6 +35,19 @@ function formatDate(iso: string): string {
   });
 }
 
+/**
+ * Nombre del autor de una versión, o `null` si no hay ninguno.
+ *
+ * `authorName` en null con `authorId` presente = el usuario fue borrado pero su
+ * nombre se conservó (columna desnormalizada a propósito). Ambos en null = la
+ * versión se creó sin autor (procesos anteriores a la Fase 4, ya migrados).
+ */
+function authorLabel(v: { authorId: string | null; authorName: string | null }): string | null {
+  if (v.authorName) return v.authorName;
+  if (v.authorId) return "Usuario eliminado";
+  return null;
+}
+
 export function VersionHistory({
   processId,
   currentVersion,
@@ -131,6 +144,11 @@ export function VersionHistory({
     [processId, onRestored, load],
   );
 
+  /** Autor de la versión seleccionada, para el encabezado del detalle. */
+  const authorOfSelected = selected === null ? null : authorLabel(
+    versions.find((v) => v.version === selected) ?? { authorId: null, authorName: null },
+  );
+
   return (
     <aside className="rb-history" aria-label="Historial de versiones">
       <header className="rb-history__header">
@@ -153,23 +171,29 @@ export function VersionHistory({
       ) : (
         <>
           <ol className="rb-history__list">
-            {versions.map((v) => (
-              <li key={v.version}>
-                <button
-                  type="button"
-                  className={`rb-history__item ${selected === v.version ? "is-selected" : ""}`}
-                  onClick={() => setSelected(selected === v.version ? null : v.version)}
-                  aria-pressed={selected === v.version}
-                >
-                  <span className="rb-history__version">
-                    v{v.version}
-                    {v.version === currentVersion && <em className="rb-history__current">actual</em>}
-                  </span>
-                  <span className="rb-history__date">{formatDate(v.createdAt)}</span>
-                  {v.comment && <span className="rb-history__comment">{v.comment}</span>}
-                </button>
-              </li>
-            ))}
+            {versions.map((v) => {
+              const author = authorLabel(v);
+              return (
+                <li key={v.version}>
+                  <button
+                    type="button"
+                    className={`rb-history__item ${selected === v.version ? "is-selected" : ""}`}
+                    onClick={() => setSelected(selected === v.version ? null : v.version)}
+                    aria-pressed={selected === v.version}
+                  >
+                    <span className="rb-history__version">
+                      v{v.version}
+                      {v.version === currentVersion && <em className="rb-history__current">actual</em>}
+                    </span>
+                    <span className="rb-history__date">
+                      {formatDate(v.createdAt)}
+                      {author && <span className="rb-history__author"> · {author}</span>}
+                    </span>
+                    {v.comment && <span className="rb-history__comment">{v.comment}</span>}
+                  </button>
+                </li>
+              );
+            })}
           </ol>
 
           {selected !== null && (
@@ -180,6 +204,7 @@ export function VersionHistory({
                 <>
                   <h4>
                     v{selected} · {describeDiff(diff)}
+                    {authorOfSelected && <span className="rb-history__detail-author"> · por {authorOfSelected}</span>}
                   </h4>
 
                   {diff.nodes.length === 0 && diff.edges.length === 0 ? (
