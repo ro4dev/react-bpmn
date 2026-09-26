@@ -4,7 +4,7 @@
  */
 import type { User } from "@shared/model/types";
 
-import { apiJson, apiNoContent } from "./http";
+import { apiJson, apiNoContent, refreshAccessToken } from "./http";
 
 const AUTH_BASE = "/api/auth";
 const INVITATIONS_BASE = "/api/invitations";
@@ -58,12 +58,18 @@ export const authApi = {
     return apiJson<AuthResponse>(`${AUTH_BASE}/login`, { method: "POST", body: input });
   },
 
-  /** POST /api/auth/refresh — renueva el access token con la cookie httpOnly. */
+  /**
+   * POST /api/auth/refresh — renueva el access token con la cookie httpOnly.
+   *
+   * Va por `refreshAccessToken` y no por `apiJson` a propósito: esa función
+   * deduplica los refrescos en vuelo. El server **rota** el refresh token
+   * (invalida el viejo al emitir el nuevo), así que dos `POST /refresh`
+   * simultáneos con la misma cookie hacen que uno gane y el otro reciba 401.
+   * Con el doble montaje del efecto de StrictMode eso pasaba siempre: el 401
+   * borraba la sesión recién creada y la app volvía a /login en silencio.
+   */
   async refresh(): Promise<{ accessToken: string }> {
-    return apiJson<{ accessToken: string }>(`${AUTH_BASE}/refresh`, {
-      method: "POST",
-      skipAuthRetry: true,
-    });
+    return { accessToken: await refreshAccessToken() };
   },
 
   /** GET /api/auth/me */
