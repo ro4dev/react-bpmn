@@ -8,6 +8,7 @@
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "seed": "npm --prefix server run seed",
+    "seed:reset": "npm --prefix server run seed -- --reset",
     "build": "npm --prefix server run build && npm --prefix client run build",
     "lint": "npm --prefix server run lint && npm --prefix client run lint",
     "test": "npm --prefix server run test && npm --prefix client run test && npm run test:ui",
