@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright: DB temporal de los tests de browser y reportes
+e2e/.tmp/
+e2e/.playwright/
+test-results/
+playwright-report/
+blob-report/
+.playwright/

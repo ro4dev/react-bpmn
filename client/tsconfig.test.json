@@ -31,5 +31,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["test"]
+  /* `test` corre con node; `e2e` y la config de Playwright los transpila Playwright. */
+  "include": ["test", "e2e", "playwright.config.ts"]
 }

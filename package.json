@@ -10,7 +10,8 @@
     "seed": "npm --prefix server run seed",
     "build": "npm --prefix server run build && npm --prefix client run build",
     "lint": "npm --prefix server run lint && npm --prefix client run lint",
-    "test": "npm --prefix server run test && npm --prefix client run test",
+    "test": "npm --prefix server run test && npm --prefix client run test && npm run test:ui",
+    "test:ui": "npm --prefix client run test:ui",
     "typecheck": "npm --prefix server run typecheck && npm --prefix client run build"
   },
   "devDependencies": {
