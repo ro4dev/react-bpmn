@@ -17,14 +17,13 @@ import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "@playwright/test";
 
-import { E2E_DB_PATH, E2E_JWT_SECRET } from "./e2e/global-setup";
+import { E2E_API_PORT, E2E_DB_PATH, E2E_JWT_SECRET, E2E_WEB_PORT } from "./e2e/demo-db";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, "..");
 
-/** API de los tests: puerto y DB propios para no pisar los datos de dev. */
-const API_PORT = 4100;
-const WEB_PORT = 5174;
+const API_PORT = E2E_API_PORT;
+const WEB_PORT = E2E_WEB_PORT;
 
 export default defineConfig({
   testDir: "./e2e",

@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "node --experimental-strip-types --test test/*.test.ts",
+    "pretest:ui": "node --experimental-strip-types e2e/prepare.ts",
     "test:ui": "playwright test",
     "preview": "vite preview"
   },

@@ -77,6 +77,62 @@ test.describe("sesión", () => {
 });
 
 test.describe("procesos", () => {
+  test("el catálogo demo se ve completo y se puede buscar", async ({ page }) => {
+    await loginDemo(page, "Ana");
+
+    // 100 procesos de negocio, de lo más simple a lo más enrevesado.
+    const filas = page.locator(".rb-process-list__table tbody tr");
+    await expect(filas).toHaveCount(100);
+    await expect(page.getByRole("tab", { name: /Todos/ })).toContainText("100");
+    // Ana es dueña de 95 y colaborador de los otros 5 (los de Bruno).
+    await expect(page.getByRole("tab", { name: /Míos/ })).toContainText("95");
+    await expect(page.getByRole("tab", { name: /Compartidos/ })).toContainText("5");
+
+    // La búsqueda va al server y deja solo lo que coincide.
+    await page.getByLabel("Buscar procesos").fill("licitación");
+    await expect(filas).not.toHaveCount(100);
+    await expect(page.getByText("Licitación pública")).toBeVisible();
+  });
+
+  test("un proceso difícil se abre entero y sin errores de validación", async ({ page }) => {
+    await loginDemo(page, "Ana");
+    await page.getByLabel("Buscar procesos").fill("Proceso de onboarding");
+    await page.getByRole("button", { name: "Abrir Proceso de onboarding" }).click();
+    await expect(page).toHaveURL(/\/editor/);
+
+    // 16 nodos: el más enrevesado del catálogo (3 decisiones, ramas en paralelo
+    // y caminos de vuelta atrás).
+    await expect(page.locator(".react-flow__node")).toHaveCount(16);
+    // El panel de validación no puede marcar errores en un proceso del catálogo.
+    await expect(page.getByText("Modelo válido: sin problemas.")).toBeVisible();
+
+    // Y tiene las 4 versiones de su historial, de los dos autores.
+    await page.getByRole("button", { name: "Historial" }).click();
+    await expect(page.locator(".rb-history__item")).toHaveCount(4);
+  });
+
+  test("todos los procesos del catálogo se abren en el editor", async ({ page }) => {
+    // El editor rechaza el modelo entero si algo del grafo no tiene forma (por
+    // ejemplo un nodo con la etiqueta `undefined`), y el proceso queda sin
+    // abrir. Ninguna suite de API ve eso: solo un navegador de verdad lo ve.
+    await loginDemo(page, "Ana");
+
+    for (const nombre of [
+      "Solicitud de vacaciones", // lineal
+      "Alta de empleado", // con corrección
+      "Solicitud de pago a proveedor", // cadena de aprobaciones
+      "Reclamo del cliente", // ramas en paralelo
+      "Cierre contable mensual", // compuesto
+    ]) {
+      await page.goto("/");
+      await page.getByLabel("Buscar procesos").fill(nombre);
+      await page.getByRole("button", { name: `Abrir ${nombre}` }).click();
+      await expect(page).toHaveURL(/\/editor/);
+      await expect(page.getByText("Modelo válido: sin problemas.")).toBeVisible();
+      await expect(page.locator(".react-flow__node")).not.toHaveCount(0);
+    }
+  });
+
   test("Ana ve el historial con el autor de cada versión", async ({ page }) => {
     await loginDemo(page, "Ana");
     await page.getByRole("button", { name: "Abrir Pedido de compra" }).click();
