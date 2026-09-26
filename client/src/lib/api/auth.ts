@@ -1,12 +1,15 @@
 /**
  * Cliente HTTP tipado para la API de autenticación (Fase 4).
- * Base URL: /api (proxied por Vite a localhost:4000 en dev).
+ * Todas las requests pasan por `apiFetch`, que inyecta el access token.
  */
 import type { User } from "@shared/model/types";
 
-export type { User } from "@shared/model/types";
+import { apiJson, apiNoContent } from "./http";
 
-const API_BASE = "/api/auth";
+const AUTH_BASE = "/api/auth";
+const INVITATIONS_BASE = "/api/invitations";
+
+export type { User };
 
 export interface RegisterInput {
   email: string;
@@ -24,81 +27,67 @@ export interface UpdateProfileInput {
   avatar?: string;
 }
 
+/** Respuesta de register/login: usuario + access token (el refresh va en cookie). */
 export interface AuthResponse {
   user: User;
   accessToken: string;
 }
 
-export interface ApiError {
-  error: string;
-  issues?: string[];
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({ error: "Error desconocido" }));
-    throw new Error(error.error, { cause: error });
-  }
-  return response.json() as Promise<T>;
+/** Invitación dirigida al usuario actual, pendiente de aceptar. */
+export interface MyInvitation {
+  id: string;
+  email: string;
+  processId: string;
+  processName: string;
+  role: "editor" | "viewer";
+  /** Token de aceptación (el server lo devuelve porque el email ya coincide). */
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+  alreadyAccepted: boolean;
 }
 
 export const authApi = {
   /** POST /api/auth/register */
   async register(input: RegisterInput): Promise<AuthResponse> {
-    const res = await fetch(`${API_BASE}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(input),
-    });
-    return handleResponse(res);
+    return apiJson<AuthResponse>(`${AUTH_BASE}/register`, { method: "POST", body: input });
   },
 
   /** POST /api/auth/login */
   async login(input: LoginInput): Promise<AuthResponse> {
-    const res = await fetch(`${API_BASE}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(input),
-    });
-    return handleResponse(res);
+    return apiJson<AuthResponse>(`${AUTH_BASE}/login`, { method: "POST", body: input });
   },
 
-  /** POST /api/auth/refresh */
+  /** POST /api/auth/refresh — renueva el access token con la cookie httpOnly. */
   async refresh(): Promise<{ accessToken: string }> {
-    const res = await fetch(`${API_BASE}/refresh`, {
+    return apiJson<{ accessToken: string }>(`${AUTH_BASE}/refresh`, {
       method: "POST",
-      credentials: "include",
+      skipAuthRetry: true,
     });
-    return handleResponse(res);
   },
 
   /** GET /api/auth/me */
   async me(): Promise<User> {
-    const res = await fetch(`${API_BASE}/me`, {
-      credentials: "include",
-    });
-    return handleResponse(res);
+    return apiJson<User>(`${AUTH_BASE}/me`);
   },
 
   /** PUT /api/auth/me */
   async updateProfile(input: UpdateProfileInput): Promise<User> {
-    const res = await fetch(`${API_BASE}/me`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(input),
-    });
-    return handleResponse(res);
+    return apiJson<User>(`${AUTH_BASE}/me`, { method: "PUT", body: input });
   },
 
   /** POST /api/auth/logout */
   async logout(): Promise<void> {
-    const res = await fetch(`${API_BASE}/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error("No se pudo cerrar sesión");
+    await apiNoContent(`${AUTH_BASE}/logout`, { method: "POST" });
+  },
+
+  /** GET /api/invitations/mine — invitaciones pendientes para mi email. */
+  async myInvitations(): Promise<MyInvitation[]> {
+    return apiJson<MyInvitation[]>(`${INVITATIONS_BASE}/mine`);
+  },
+
+  /** POST /api/invitations/accept */
+  async acceptInvitation(token: string): Promise<{ collaborator: { processId: string; userId: string; role: string; invitedAt: string } }> {
+    return apiJson(`${INVITATIONS_BASE}/accept`, { method: "POST", body: { token } });
   },
 };

@@ -1,57 +1,69 @@
 /**
- * Componente raíz: layout del editor + vista de listado + autenticación (Fase 4).
- * - AuthProvider: estado global de autenticación (user, accessToken, login, logout)
- * - Rutas públicas: /login, /register (redirigen a / si autenticado)
- * - Rutas protegidas: / (lista), /editor/* (editor), /profile (redirigen a /login si no autenticado)
- * - Header global con avatar + menú usuario (Perfil / Cerrar sesión)
- * Mantiene autoguardado local (localStorage) + guarda en server explícito.
+ * Componente raíz (Fases 1-4).
+ *
+ * - `AuthProvider` + rutas: `/login`, `/register` públicas; `/`, `/editor`,
+ *   `/invitaciones`, `/perfil` protegidas.
+ * - `MainLayout` con header global (avatar, menú de usuario, invitaciones).
+ * - El listado y el editor se manejan por estado (no por ruta) porque el modelo
+ *   del editor vive en memoria: abrir un proceso es una acción, no una URL
+ *   compartible. Ver AD-018.
  */
 import { ReactFlowProvider } from "@xyflow/react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import "./App.css";
 import { Canvas } from "./features/editor/Canvas";
 import { Palette } from "./features/editor/Palette";
-import {
-  PropertiesPanel,
-  type NodeChanges,
-} from "./features/editor/PropertiesPanel";
+import { PropertiesPanel, type NodeChanges } from "./features/editor/PropertiesPanel";
 import { Toolbar } from "./features/editor/Toolbar";
 import { ValidationPanel } from "./features/editor/ValidationPanel";
 import { ProcessList } from "./features/processes/ProcessList";
+import { ShareModal } from "./features/processes/ShareModal";
+import { VersionHistory } from "./features/processes/VersionHistory";
 import { useProcessModel } from "./hooks/useProcessModel";
 import { validateProcessModel } from "./lib/model/serialize";
 import { validateProcess } from "./lib/validation/validateProcess";
+import { processesApi, type ProcessMeta } from "./lib/api/processes";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Profile } from "./pages/Profile";
+import { Invitations } from "./pages/Invitations";
+import type { ProcessModel, Role } from "@shared/model/types";
 
 /** Nombre del archivo generado al exportar el modelo. */
 const EXPORT_FILE_NAME = "proceso.json";
 
-/** Rutas públicas: redirigen a "/" si ya autenticado. */
+/** Rutas públicas: redirigen a "/" si ya estás autenticado. */
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return null; // esperar a que termine initAuth
+  if (isLoading) return <LoadingScreen />;
 
   return isAuthenticated ? <Navigate to="/" replace state={{ from: location }} /> : <>{children}</>;
 }
 
-/** Rutas protegidas: redirigen a /login si no autenticado. */
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+/** Rutas protegidas: redirigen a /login si no hay sesión. */
+function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return null;
+  if (isLoading) return <LoadingScreen />;
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace state={{ from: location }} />;
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace state={{ from: location }} />;
 }
 
-/** Layout principal con header global. */
+function LoadingScreen() {
+  return (
+    <div className="rb-loading" role="status">
+      Cargando…
+    </div>
+  );
+}
+
+/** Layout con header global; las páginas renderizan en <Outlet/>. */
 function MainLayout() {
   const { user, logout } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
@@ -68,13 +80,21 @@ function MainLayout() {
   }, []);
 
   return (
-    <main className="app">
+    <div className="app">
       <header className="app__header">
-        <div className="app__header-left">
+        <Link to="/" className="app__brand">
           <h1>react-bpmn</h1>
           <p className="app__tagline">Modelador web de procesos de negocio</p>
-        </div>
-        <div className="app__header-right">
+        </Link>
+
+        <nav className="app__header-right" aria-label="Navegación">
+          <Link to="/invitaciones" className="app__navlink">
+            Invitaciones
+          </Link>
+          <Link to="/perfil" className="app__navlink">
+            Perfil
+          </Link>
+
           {user && (
             <div className="rb-user-menu" ref={menuRef}>
               <button
@@ -82,12 +102,14 @@ function MainLayout() {
                 className="rb-user-menu__trigger"
                 onClick={() => setShowMenu(!showMenu)}
                 aria-expanded={showMenu}
-                aria-haspopup="true"
+                aria-haspopup="menu"
               >
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="rb-user-avatar" />
+                  <img src={user.avatar} alt="" className="rb-user-avatar" />
                 ) : (
-                  <span className="rb-user-avatar rb-user-avatar--placeholder">{user.name[0].toUpperCase()}</span>
+                  <span className="rb-user-avatar rb-user-avatar--placeholder">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
                 )}
                 <span className="rb-user-name">{user.name}</span>
               </button>
@@ -97,48 +119,59 @@ function MainLayout() {
                     <strong>{user.name}</strong>
                     <small>{user.email}</small>
                   </div>
-                  <a href="/profile" className="rb-user-menu__item" role="menuitem" onClick={() => setShowMenu(false)}>
-                    Perfil
-                  </a>
-                  <button className="rb-user-menu__item rb-user-menu__item--danger" role="menuitem" onClick={() => logout()}>
+                  <Link to="/perfil" className="rb-user-menu__item" role="menuitem" onClick={() => setShowMenu(false)}>
+                    Mi perfil
+                  </Link>
+                  <Link to="/invitaciones" className="rb-user-menu__item" role="menuitem" onClick={() => setShowMenu(false)}>
+                    Invitaciones
+                  </Link>
+                  <button
+                    type="button"
+                    className="rb-user-menu__item rb-user-menu__item--danger"
+                    role="menuitem"
+                    onClick={() => void logout()}
+                  >
                     Cerrar sesión
                   </button>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </nav>
       </header>
 
-      <Outlet />
-    </main>
+      <main className="app__main">
+        <Outlet />
+      </main>
+    </div>
   );
 }
 
-/** Editor view (extraído para mantener App limpio). */
-function EditorView() {
+/** Vista de listado + editor, con el estado compartido entre ambas. */
+function Workspace() {
   const editor = useProcessModel();
+  const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [editingProcessId, setEditingProcessId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ id: string; name: string; role: Role } | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedNode = editor.nodes.find((node) => node.id === selectedId) ?? null;
+  const validationIssues = useMemo(() => validateProcess(editor.model), [editor.model]);
 
-  const validationIssues = useMemo(
-    () => validateProcess(editor.model),
-    [editor.model],
-  );
+  const canEdit = !editing || editing.role === "owner" || editing.role === "editor";
+  const isOwner = !editing || editing.role === "owner";
+  const isEditorRoute = useIsEditorRoute();
 
-  // Atajos de deshacer/rehacer
+  // Atajos de deshacer/rehacer.
   useEffect(() => {
     const handler = (event: globalThis.KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
       ) {
         return;
       }
@@ -172,8 +205,7 @@ function EditorView() {
   const handleImportFile = useCallback(
     async (file: File) => {
       try {
-        const text = await file.text();
-        const parsed: unknown = JSON.parse(text);
+        const parsed: unknown = JSON.parse(await file.text());
         if (!validateProcessModel(parsed)) {
           setMessage("El archivo no es un modelo de proceso válido.");
           return;
@@ -196,43 +228,94 @@ function EditorView() {
     [editor, selectedId],
   );
 
-  const handleBackToList = useCallback(() => {
-    window.history.back(); // vuelve a la lista
-  }, []);
+  const handleOpenProcess = useCallback(
+    (meta: ProcessMeta) => {
+      void (async () => {
+        try {
+          const full = await processesApi.get(meta.id);
+          if (!validateProcessModel(full.model)) {
+            setMessage("El proceso guardado tiene un formato inválido.");
+            return;
+          }
+          editor.loadModel(full.model, full.currentVersion);
+          setEditing({ id: full.id, name: full.name, role: full.role });
+          setSelectedId(null);
+          setShowHistory(false);
+          setMessage(
+            full.role === "owner"
+              ? `Proceso "${full.name}" cargado (v${full.currentVersion}).`
+              : `Proceso "${full.name}" cargado como ${full.role} (v${full.currentVersion}).`,
+          );
+          navigate("/editor");
+        } catch (e) {
+          setMessage(e instanceof Error ? e.message : "Error al abrir el proceso.");
+        }
+      })();
+    },
+    [editor, navigate],
+  );
+
+  const handleNewProcess = useCallback(() => {
+    editor.loadModel({ version: 1, nodes: [], edges: [] });
+    editor.setVersion(1);
+    setEditing(null);
+    setSelectedId(null);
+    setShowHistory(false);
+    setMessage("Nuevo proceso creado. Guardalo en el server para começar a versionarlo.");
+    navigate("/editor");
+  }, [editor, navigate]);
 
   const handleSaveToServer = useCallback(async () => {
+    if (!canEdit) {
+      setMessage("Tu rol es de lectura: no podés guardar cambios.");
+      return;
+    }
     try {
-      const body = {
-        name: editingProcessId
-          ? undefined
-          : prompt("Nombre del proceso:") || "Sin nombre",
-        model: editor.model,
-        comment: `Guardado manual`,
-      };
-      const url = editingProcessId
-        ? `/api/processes/${editingProcessId}`
-        : "/api/processes";
-      const method = editingProcessId ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error guardando en servidor");
+      let id = editing?.id ?? null;
+      let name = editing?.name ?? "";
+      if (!id) {
+        const entered = window.prompt("Nombre del proceso:", "Proceso sin nombre");
+        if (entered === null) return;
+        name = entered.trim() || "Proceso sin nombre";
       }
-      const saved = await res.json();
-      setEditingProcessId(saved.id);
+
+      const saved =
+        id !== null
+          ? await processesApi.update(id, { model: editor.model, comment: "Guardado manual" })
+          : await processesApi.create({ name, model: editor.model, comment: "Versión inicial" });
+
+      setEditing({ id: saved.id, name: saved.name, role: saved.role });
       editor.setVersion(saved.currentVersion);
       setMessage(`Proceso guardado en servidor (v${saved.currentVersion}).`);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Error guardando en servidor");
     }
-  }, [editor.model, editingProcessId, editor.setVersion]);
+  }, [canEdit, editing, editor]);
 
+  /** Restaurar una versión: el modelo vuelve al editor como una versión nueva. */
+  const handleRestored = useCallback(
+    (model: ProcessModel, newVersion: number) => {
+      editor.loadModel(model, newVersion);
+      setMessage(`Versión restaurada (ahora estás en v${newVersion}).`);
+    },
+    [editor],
+  );
+
+  // --- Vista de listado ---
+  if (!isEditorRoute) {
+    return (
+      <>
+        {message && (
+          <p className="app__message" role="status">
+            {message}
+          </p>
+        )}
+        <ProcessList onOpen={handleOpenProcess} onNew={handleNewProcess} />
+      </>
+    );
+  }
+
+  // --- Vista de editor ---
   return (
     <>
       <Toolbar
@@ -243,10 +326,18 @@ function EditorView() {
         onRedo={editor.redo}
         canUndo={editor.canUndo}
         canRedo={editor.canRedo}
-        onSaveServer={handleSaveToServer}
-        onBackToList={handleBackToList}
-        editingProcessId={editingProcessId}
+        onSaveServer={() => void handleSaveToServer()}
+        onBackToList={() => {
+          setEditing(null);
+          setShowHistory(false);
+          navigate("/");
+        }}
+        editingProcessId={editing?.id ?? null}
         currentVersion={editor.serverVersion ?? 1}
+        onShowHistory={() => setShowHistory((v) => !v)}
+        onShare={() => setShowShare(true)}
+        role={editing?.role ?? "owner"}
+        historyOpen={showHistory}
       />
 
       <input
@@ -266,8 +357,13 @@ function EditorView() {
           {message}
         </p>
       )}
+      {editing && !canEdit && (
+        <p className="app__message app__message--warn" role="status">
+          Tenés acceso de lectura a este proceso: podés verlo pero no guardarlo.
+        </p>
+      )}
 
-      <div className="app__workspace">
+      <div className={`app__workspace ${showHistory ? "has-history" : ""}`}>
         <Palette />
         <Canvas
           nodes={editor.nodes}
@@ -281,54 +377,64 @@ function EditorView() {
           onNodeDragStart={editor.onNodeDragStart}
         />
         <div className="app__side">
-          <PropertiesPanel node={selectedNode} onChange={handleNodeChange} />
+          <PropertiesPanel node={selectedNode} onChange={handleNodeChange} readOnly={!canEdit} />
           <ValidationPanel issues={validationIssues} />
         </div>
+        {showHistory && editing && (
+          <VersionHistory
+            processId={editing.id}
+            currentVersion={editor.serverVersion ?? 1}
+            canRestore={canEdit}
+            onRestored={handleRestored}
+            onClose={() => setShowHistory(false)}
+          />
+        )}
       </div>
+
+      {showShare && editing && (
+        <ShareModal
+          processId={editing.id}
+          processName={editing.name}
+          canManage={isOwner}
+          onClose={() => setShowShare(false)}
+        />
+      )}
     </>
   );
 }
 
-/** List view con ProcessList. */
-function ListView() {
-  const editor = useProcessModel();
-
-  const _handleOpenProcess = useCallback(
-    (meta: { id: string; name: string; currentVersion: number }) => {
-      void (async () => {
-        try {
-          const res = await fetch(`/api/processes/${meta.id}`, { credentials: "include" });
-          if (!res.ok) throw new Error("No se pudo cargar el proceso");
-          const { model } = await res.json();
-          if (!validateProcessModel(model)) {
-            window.alert("El proceso guardado tiene un formato inválido.");
-            return;
-          }
-          editor.loadModel(model, meta.currentVersion);
-          window.location.href = "/editor";
-        } catch {
-          window.alert("Error al abrir el proceso.");
-        }
-      })();
-    },
-    [editor],
-  );
-
-  const _handleNewProcess = useCallback(() => {
-    editor.loadModel({ version: 1, nodes: [], edges: [] });
-    window.location.href = "/editor";
-  }, [editor]);
-
-  return <ProcessList onOpen={_handleOpenProcess} onNew={_handleNewProcess} />;
+/** Lee la ruta actual sin necesidad de props (para no duplicar el estado). */
+function useIsEditorRoute(): boolean {
+  const location = useLocation();
+  return location.pathname === "/editor";
 }
 
-/** App principal con router. */
+/**
+ * Ruta del workspace: listado y editor comparten estado, así que tienen que
+ * ser la **misma** instancia de `Workspace` montada en ambas rutas (si fueran dos
+ * `<Route>` distintas, React desmontaría al cambiar de ruta y se perdería el
+ * modelo que está en memoria). Un solo `path="*"` con redirección interna lo
+ * resuelve.
+ */
+function WorkspaceRoute() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.pathname !== "/" && location.pathname !== "/editor") {
+      navigate("/", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  return <Workspace />;
+}
+
 function AppRouter() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Rutas públicas */}
+          {/* Públicas */}
           <Route
             path="/login"
             element={
@@ -346,14 +452,17 @@ function AppRouter() {
             }
           />
 
-          {/* Rutas protegidas con layout principal */}
-          <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-            <Route path="/" element={<ListView />} />
-            <Route path="/editor" element={<EditorView />} />
-            <Route path="/profile" element={<Profile />} />
+          {/* Protegidas */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<MainLayout />}>
+              <Route path="/invitaciones" element={<Invitations />} />
+              <Route path="/perfil" element={<Profile />} />
+              {/* Alias en inglés por si algún link antiguo apunta a /profile */}
+              <Route path="/profile" element={<Navigate to="/perfil" replace />} />
+              <Route path="*" element={<WorkspaceRoute />} />
+            </Route>
           </Route>
 
-          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
@@ -361,7 +470,6 @@ function AppRouter() {
   );
 }
 
-/** App wrapper con ReactFlowProvider. */
 function App() {
   return (
     <ReactFlowProvider>

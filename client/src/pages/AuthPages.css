@@ -188,3 +188,41 @@
   color: #64748b;
   font-size: 0.9rem;
 }
+
+/* Invitaciones (Fase 4) */
+
+.rb-invitations {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rb-invitation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.rb-invitation div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rb-invitation strong {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.rb-invitation small {
+  font-size: 0.75rem;
+  color: #64748b;
+}

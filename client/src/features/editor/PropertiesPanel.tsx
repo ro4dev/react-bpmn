@@ -18,15 +18,28 @@ interface PropertiesPanelProps {
   node: FlowNode | null;
   /** Aplica cambios al nodo seleccionado. */
   onChange: (changes: NodeChanges) => void;
+  /** Solo lectura: el usuario tiene rol viewer sobre el proceso (Fase 4). */
+  readOnly?: boolean;
 }
 
 /** Panel de propiedades del nodo seleccionado. */
-export function PropertiesPanel({ node, onChange }: PropertiesPanelProps) {
+export function PropertiesPanel({ node, onChange, readOnly = false }: PropertiesPanelProps) {
   if (node === null) {
     return (
       <aside className="rb-properties" aria-label="Panel de propiedades">
         <h2 className="rb-properties__title">Propiedades</h2>
         <p className="rb-properties__empty">Seleccioná un nodo para editarlo.</p>
+      </aside>
+    );
+  }
+
+  if (readOnly) {
+    return (
+      <aside className="rb-properties" aria-label="Panel de propiedades">
+        <h2 className="rb-properties__title">Propiedades</h2>
+        <p className="rb-properties__empty">
+          <strong>{node.data.label}</strong> — solo lectura (tu rol es lector).
+        </p>
       </aside>
     );
   }

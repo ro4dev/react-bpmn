@@ -8,7 +8,7 @@ import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 
 import { initSchema } from "./schema.js";
-import type { ProcessModel } from "@shared/model/types";
+import type { ProcessModel, Role } from "../../../shared/src/model/types.js";
 
 /** Metadatos de un proceso (para listado). */
 export interface ProcessMeta {
@@ -23,6 +23,8 @@ export interface ProcessMeta {
   preview: string;
   /** Estado derivado: "válido" | "con-errores" | "con-advertencias" | "vacío". */
   status: "válido" | "con-errores" | "con-advertencias" | "vacío";
+  /** Rol del usuario solicitante sobre este proceso (Fase 4). */
+  role: Role;
 }
 
 /** Versión completa de un proceso (para historial). */
@@ -85,6 +87,10 @@ export class ProcessStore {
   constructor(dbPath: string) {
     this.db = new DatabaseSync(dbPath);
     this.db.exec("PRAGMA foreign_keys = ON;");
+    // El esquema se crea en el constructor (y no desde index.ts) para que
+    // cualquier entry point — dev server, tests, scripts — tenga la base lista.
+    // `initSchema` es idempotente.
+    this.init();
   }
 
   /** Inicializa el esquema (idempotente). */
@@ -156,7 +162,7 @@ export class ProcessStore {
       updatedAt: string;
     }>;
 
-    return rows.map((row) => this.enrichMeta(row));
+    return rows.map((row) => this.enrichMeta(row, userId));
   }
 
   /** Obtiene metadatos de un proceso por id (si el usuario tiene acceso). */
@@ -169,7 +175,7 @@ export class ProcessStore {
       | undefined;
     if (!row) return null;
     if (!this.canAccess(userId, id, "read")) return null;
-    return this.enrichMeta(row);
+    return this.enrichMeta(row, userId);
   }
 
   /** Obtiene el modelo completo de la última versión (si tiene acceso read). */
@@ -293,20 +299,9 @@ export class ProcessStore {
 
   /** Verifica si un usuario puede realizar una acción en un proceso. */
   canAccess(userId: string, processId: string, action: "read" | "write" | "delete" | "manage_collaborators"): boolean {
-    // Owner check
-    const ownerRow = this.db
-      .prepare("SELECT ownerId FROM Process WHERE id = ?")
-      .get(processId) as { ownerId: string | null } | undefined;
-    if (ownerRow?.ownerId === userId) return true;
+    const role = this.roleOf(userId, processId);
+    if (!role) return false;
 
-    // Colaborador check
-    const collab = this.db
-      .prepare("SELECT role FROM ProcessCollaborator WHERE processId = ? AND userId = ?")
-      .get(processId, userId) as { role: string } | undefined;
-
-    if (!collab) return false;
-
-    const role = collab.role;
     switch (action) {
       case "read":
         return ["owner", "editor", "viewer"].includes(role);
@@ -320,6 +315,38 @@ export class ProcessStore {
     }
   }
 
+  /**
+   * Rol de un usuario sobre un proceso, o `null` si no tiene acceso.
+   * El owner gana siempre: aunque quedara un `ProcessCollaborator` con otro rol,
+   * `Process.ownerId` es la fuente de verdad.
+   */
+  roleOf(userId: string, processId: string): Role | null {
+    const ownerRow = this.db
+      .prepare("SELECT ownerId FROM Process WHERE id = ?")
+      .get(processId) as { ownerId: string | null } | undefined;
+    if (ownerRow?.ownerId === userId) return "owner";
+
+    const collab = this.db
+      .prepare("SELECT role FROM ProcessCollaborator WHERE processId = ? AND userId = ?")
+      .get(processId, userId) as { role: string } | undefined;
+    if (!collab) return null;
+    return collab.role as Role;
+  }
+
+  /**
+   * Añade/actualiza colaborador sin chequeo de permisos.
+   *
+   * Reservado para rutas donde el permiso ya fue validado por otro medio
+   * (aceptar una invitación: el owner ya lo autorizó al emitirla).
+   */
+  addCollaboratorDirect(processId: string, userId: string, role: "editor" | "viewer"): { processId: string; userId: string; role: "editor" | "viewer"; invitedAt: string } {
+    const ts = nowISO();
+    this.db.prepare(
+      "INSERT OR REPLACE INTO ProcessCollaborator (processId, userId, role, invitedAt) VALUES (?, ?, ?, ?)",
+    ).run(processId, userId, role, ts);
+    return { processId, userId, role, invitedAt: ts };
+  }
+
   // --- Helpers privados ---
 
   private enrichMeta(row: {
@@ -329,7 +356,7 @@ export class ProcessStore {
     ownerId: string | null;
     createdAt: string;
     updatedAt: string;
-  }): ProcessMeta {
+  }, userId: string): ProcessMeta {
     const stmt = this.db.prepare(
       "SELECT COUNT(*) as c FROM ProcessVersion WHERE processId = ?",
     );
@@ -340,6 +367,7 @@ export class ProcessStore {
       versionCount: versionCount?.c ?? 0,
       preview: latestModel ? buildPreview(latestModel) : "vacío",
       status: latestModel ? deriveStatus(latestModel) : "vacío",
+      role: this.roleOf(userId, row.id) ?? "viewer",
     };
   }
 

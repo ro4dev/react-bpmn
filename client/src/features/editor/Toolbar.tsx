@@ -7,6 +7,8 @@
 import { useReactFlow, useStoreApi } from "@xyflow/react";
 import { useCallback } from "react";
 
+import type { Role } from "@shared/model/types";
+
 import { exportDiagram, type ImageFormat } from "./exportImage";
 import "./editor.css";
 
@@ -33,7 +35,22 @@ interface ToolbarProps {
   editingProcessId: string | null;
   /** Número de versión actual del modelo en el editor. */
   currentVersion: number;
+  /** Abre el panel lateral de historial de versiones (Fase 4). */
+  onShowHistory: () => void;
+  /** Abre el modal de compartir (Fase 4). */
+  onShare: () => void;
+  /** Rol del usuario actual sobre el proceso abierto (Fase 4). */
+  role: Role;
+  /** El historial está visible en este momento. */
+  historyOpen: boolean;
 }
+
+/** Etiquetas de rol para el badge. */
+const ROLE_LABEL: Record<Role, string> = {
+  owner: "Owner",
+  editor: "Editor",
+  viewer: "Lector",
+};
 
 /** Barra de herramientas del editor. */
 export function Toolbar({
@@ -48,6 +65,10 @@ export function Toolbar({
   onBackToList,
   editingProcessId,
   currentVersion,
+  onShowHistory,
+  onShare,
+  role,
+  historyOpen,
 }: ToolbarProps) {
   const { getNodes } = useReactFlow();
   const { getState } = useStoreApi();
@@ -127,13 +148,41 @@ export function Toolbar({
 
       <span className="rb-toolbar__separator" aria-hidden="true" />
 
+      {editingProcessId && (
+        <>
+          <button
+            type="button"
+            className={`rb-toolbar__button ${historyOpen ? "is-active" : ""}`}
+            onClick={onShowHistory}
+            title="Ver historial de versiones"
+          >
+            Historial
+          </button>
+          <button
+            type="button"
+            className="rb-toolbar__button"
+            onClick={onShare}
+            title="Compartir con colaboradores"
+          >
+            Compartir
+          </button>
+        </>
+      )}
+
+      <span className="rb-toolbar__separator" aria-hidden="true" />
+
       <span className="rb-toolbar__version-badge" aria-label={`Versión actual: ${currentVersion}`}>
         v{currentVersion}
       </span>
       {editingProcessId && (
-        <span className="rb-toolbar__process-id" aria-label={`ID de proceso: ${editingProcessId}`}>
-          #{editingProcessId.slice(0, 8)}
-        </span>
+        <>
+          <span className={`rb-toolbar__role rb-toolbar__role--${role}`} title={`Tu rol: ${ROLE_LABEL[role]}`}>
+            {ROLE_LABEL[role]}
+          </span>
+          <span className="rb-toolbar__process-id" aria-label={`ID de proceso: ${editingProcessId}`}>
+            #{editingProcessId.slice(0, 8)}
+          </span>
+        </>
       )}
     </nav>
   );

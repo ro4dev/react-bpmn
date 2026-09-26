@@ -4,12 +4,12 @@
  */
 import { Router, Request, Response, NextFunction } from "express";
 
-import { createAuthStore } from "../db/authStore.js";
+import { getAuthStore } from "../db/singleton.js";
 import { authRequired } from "../middleware/auth.js";
-import { validateRegister, validateLogin } from "@shared/validation/validateAuth.js";
+import { validateRegister, validateLogin } from "../../../shared/src/validation/validateAuth.js";
 
 const router = Router();
-const authStore = createAuthStore();
+const authStore = getAuthStore();
 
 /** Helper: setea cookie httpOnly para refresh token. */
 function setRefreshCookie(res: Response, refreshToken: string): void {
@@ -107,18 +107,28 @@ router.post("/refresh", (req: Request, res: Response, next: NextFunction) => {
 });
 
 // --- GET /api/auth/me ---
-router.get("/me", authRequired, (_req: Request, res: Response) => {
-  res.json({ id: _req.user!.id, email: _req.user!.email, name: _req.user!.name, avatar: null, createdAt: "" });
-  // Nota: createdAt y avatar se obtendrían de la DB si hiciera falta; para Fase 4 basta con lo del token
+// Lee de la DB (no del JWT): el access token lleva datos potentially viejos
+// (por ejemplo el nombre antes de un PUT /me).
+router.get("/me", authRequired, (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = authStore.findById(req.user!.id);
+    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+    res.json(user);
+  } catch (e) {
+    next(e);
+  }
 });
 
 // --- PUT /api/auth/me ---
 router.put("/me", authRequired, (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, avatar } = req.body as { name?: string; avatar?: string };
+    if (name !== undefined && name.trim() === "") {
+      return res.status(400).json({ error: "El nombre no puede estar vacío" });
+    }
     const user = authStore.updateProfile(req.user!.id, name, avatar);
     if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
-    res.json({ id: user.id, email: user.email, name: user.name, avatar: user.avatar, createdAt: user.createdAt });
+    res.json(user);
   } catch (e) {
     next(e);
   }

@@ -21,6 +21,84 @@
   font-size: 1.5rem;
 }
 
+.rb-process-list__filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rb-process-list__filters input {
+  flex: 1;
+  min-width: 200px;
+  max-width: 400px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-border, #ccc);
+  border-radius: 4px;
+  background: var(--color-bg, #fff);
+  color: var(--color-text, #000);
+}
+
+.rb-process-list__scopes {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: var(--color-bg-muted, #f1f5f9);
+  border-radius: 6px;
+}
+
+.rb-process-list__scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: #475569;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rb-process-list__scope:hover {
+  background: rgb(255 255 255 / 0.7);
+}
+
+.rb-process-list__scope.is-active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+
+.rb-process-list__scope-count {
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.rb-process-list__scope.is-active .rb-process-list__scope-count {
+  background: #2563eb;
+  color: #fff;
+}
+
+.rb-process-list__actions {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.rb-btn--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.rb-btn--danger:hover { background: #fee2e2; }
+
 .rb-process-list__search input {
   width: 100%;
   max-width: 400px;
