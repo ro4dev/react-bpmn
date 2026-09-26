@@ -70,3 +70,12 @@ suites de API **no pueden** ver: que la sesión llegue, que no salte el redirect
 login funcionaba contra la API pero en el browser el refresh con rotación de
 token borraba la sesión y volvía a `/login` sin mostrar error (ver
 [03 — Guía de setup](./03-guia-de-setup.md)).
+
+La segunda paga fue encontrar que **Playwright levanta los `webServer` antes del
+`globalSetup`**: la API abría el archivo de la base de la corrida anterior y el
+seed lo borraba después, así que los tests leían data vieja (el catálogo de 2
+procesos cuando el código ya tenía 100) y fallaban por el motivo equivocado. Por
+eso la base se siembra en un paso previo (`pretest:ui`) y el `globalSetup` solo
+verifica que la API esté sirviendo esa base. Es la clase de error que más tiempo
+cuesta cuando parece un bug de la app: si un test de browser falla con un dato
+raro, sospechá primero de la base.

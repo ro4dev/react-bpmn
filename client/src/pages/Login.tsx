@@ -14,8 +14,8 @@ import "./AuthPages.css";
 
 /** Mismas credenciales que crea `server/src/db/seed.ts` (DEMO_PASSWORD). */
 const DEMO_ACCOUNTS = [
-  { email: "ana@demo.local", label: "Ana", role: "owner · 2 procesos con historial" },
-  { email: "bruno@demo.local", label: "Bruno", role: "editor y viewer · vista collaborators" },
+  { email: "ana@demo.local", label: "Ana", role: "owner · 100 procesos de negocio" },
+  { email: "bruno@demo.local", label: "Bruno", role: "editor y viewer · vista por rol" },
 ];
 const DEMO_PASSWORD = "demo1234";
 

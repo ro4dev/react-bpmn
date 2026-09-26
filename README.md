@@ -72,12 +72,18 @@ npm run dev
 ### Datos de prueba (opcional)
 
 ```bash
-npm run seed   # 2 usuarios, 2 procesos con historial, colaboradores e invitación
+npm run seed        # 2 usuarios + 100 procesos de negocio con historial, roles e invitación
+npm run seed:reset  # regenera los datos demo (borra solo los datos demo, no tu trabajo)
 ```
 
  obviás el registro manual. Después en `/login` entrás con un clic: **Ana** (owner
-de los dos procesos) o **Bruno** (editor de uno, viewer del otro). Es el login
+de 95 procesos) o **Bruno** (editor de 32, viewer de 1, owner de 5). Es el login
 normal con credenciales conocidas, no un bypass de la autenticación.
+
+Los 100 procesos vienen de un catálogo de 12 áreas (personas, contratación,
+compras, inventario, ventas, logística, servicio al cliente, calidad, finanzas,
+legal, tecnología y salud) con cinco formas de diagrama, de lineal a compuesto:
+51 simples y 31 enrevesados, todos válidos y con historial de 2 a 4 versiones.
 
 Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 
@@ -98,6 +104,6 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 - **Historial visible (Fase 4 ✅)**: panel lateral con el diff semántico entre versiones, el autor de cada guardado y restauración que crea una versión nueva sin borrar el historial (AD-020).
 - **Modelo compartido**: `shared/` (`ProcessModel` + `validateProcess`) consumido por client y server (AD-015).
 - **Base de datos**: SQLite nativo (`node:sqlite` + `DatabaseSync`) en `server/src/db/`, modo WAL (AD-010, AD-014).
-- **Datos de prueba**: `npm run seed` siembra 2 usuarios, 2 procesos con historial de varios autores, colaboradores de ambos roles y una invitación pendiente — para recorrer la app sin registrar nada (ver [03 — Guía de setup](./docs/03-guia-de-setup.md)).
-- **Tests**: `npm test` corre las cinco suites — 47 aserciones end-to-end de la API, 18 de unidad del `ProcessStore` (autoría, caché de roles, consultas), 19 del seed (idempotencia, modelos válidos), 12 del diff semántico y **7 tests de browser con Playwright** (sesión, recarga, historial con autores, modo lectura). Lógica: `node:test` + `--experimental-strip-types`, sin framework.
+- **Datos de prueba**: `npm run seed` siembra 2 usuarios y **100 procesos de negocio** (12 áreas, de lineal a compuesto, con historial de varios autores, colaboradores de los tres roles y una invitación pendiente) — para recorrer la app sin registrar nada (ver [03 — Guía de setup](./docs/03-guia-de-setup.md)).
+- **Tests**: `npm test` corre las cinco suites — 47 aserciones end-to-end de la API, 22 de unidad del `ProcessStore` (autoría, caché de roles, consultas), 53 del seed (catálogo válido, historial que crece, idempotencia, `--reset`), 12 del diff semántico y **10 tests de browser con Playwright** (sesión, recarga, catálogo completo y buscable, proceso enrevesado, un proceso de cada forma, historial con autores, modo lectura). Lógica: `node:test` + `--experimental-strip-types`, sin framework.
 - Planificación con OpenSpec: changes archivados en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).
