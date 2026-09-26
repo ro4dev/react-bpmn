@@ -69,9 +69,24 @@ Cada `POST`/`PUT` (y también `restore`) manda `authorName` desde `req.user`; el
 ### Tests
 
 - `npm --prefix server run test:unit` — 18 aserciones sobre el `ProcessStore` con DB temporal: autoría (incluido el fallback a `User`), semántica de la caché de roles dentro de un mismo scope (que una mutación no deje el valor viejo) y conteo de sentencias para la regresión del N+1.
+- `npm --prefix server run test:seed` — 19 aserciones sobre `db/seed.ts`: que la contraseña demo autentique de verdad, que los modelos creados pasen `validateProcess` (si no, el editor abriría el proceso con errores) y que el seed sea idempotente (correrlo dos veces no duplica usuarios, procesos ni versiones).
 - `npm --prefix server run test:e2e` — 47 aserciones de integración contra la app real.
 - `npm --prefix client run test` — 12 aserciones del diff semántico de grafo (`client/test/model-diff.test.ts`), sin dependencias: `node:test` + `--experimental-strip-types`.
-- `npm test` (raíz) corre los tres.
+- `npm test` (raíz) corre las cuatro.
+
+### Datos de prueba
+
+`npm run seed` (`src/seed.ts` → `db/seed.ts`) siembra la base de dev con dos
+usuarios conocidos (`ana@demo.local`, `bruno@demo.local`, contraseña `demo1234`),
+dos procesos —uno con tres versiones guardadas por ambos autores para que se vea
+la autoría en el historial, otro donde Bruno solo lee— y una invitación viva a
+`pendiente@ejemplo.local`.
+
+Es **idempotente por diseño**: si `ana@demo.local` ya existe no hace nada, así que
+se puede correr cada vez que uno arranca sin pisar el trabajo real ni duplicar
+datos. La carga de `.env` vive en `config/env.ts` (no en `index.ts`) para que el
+seed tenga `JWT_SECRET` —lo necesita para firmar la invitación— sin duplicar el
+parser.
 
 ### Import del modelo compartido
 
@@ -91,7 +106,16 @@ server/src/
 ├── controllers/          → Handlers de los endpoints (usan services)
 ├── services/             → Lógica de negocio (no sabe de HTTP)
 ├── models/               → Capa de datos / persistencia (Fase 3: ver `db/`)
-└── middleware/           → Validación, manejo de errores, auth (Fase 4 ✅)
+├── middleware/           → Validación, manejo de errores, auth (Fase 4 ✅)
+├── config/env.ts         → Lectura de .env (la usan index.ts y el seed)
+├── seed.ts               → CLI de `npm run seed` (datos de prueba)
+└── db/                   → SQLite: schema, stores, caché de roles, seed
+    ├── schema.ts         → DDL idempotente
+    ├── processStore.ts   → Procesos, versiones, colaboradores
+    ├── authStore.ts      → Usuarios, tokens e invitaciones
+    ├── roleCache.ts      → Caché de roles por request (AsyncLocalStorage)
+    ├── seed.ts           → Datos demo (idempotente)
+    └── singleton.ts      → Instancias compartidas + resolución de DB_PATH
 ```
 
 ## Convenciones
@@ -103,7 +127,7 @@ server/src/
 
 ## Variables de entorno
 
-Se leen de `server/.env` (parser propio, sin dependencias; no sobreescribe variables ya presentes en el entorno).
+Se leen de `server/.env` con el parser de `config/env.ts` (propio, sin dependencias; no sobreescribe variables ya presentes en el entorno).
 
 | Variable | Default | Descripción |
 | --- | --- | --- |

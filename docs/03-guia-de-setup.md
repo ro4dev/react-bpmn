@@ -47,9 +47,10 @@ Todos los comandos se corren **desde la raíz del repo**, salvo indicación cont
 | `npm run dev` | Levanta **server y client juntos** (concurrently) |
 | `npm run dev:server` | Levanta solo la API (hot reload con `tsx watch`, puerto 4000) |
 | `npm run dev:client` | Levanta solo el frontend (Vite, puerto 5173) |
+| `npm run seed` | Crea los datos de prueba (2 usuarios, 2 procesos, invitación) |
 | `npm run build` | Compila server y client a producción |
 | `npm run lint` | Lint de server y client (oxlint) |
-| `npm test` | Tests completos: store (server), e2e de la API y diff semántico (client) |
+| `npm test` | Tests completos: store (server), seed, e2e de la API y diff semántico (client) |
 | `npm run typecheck` | Typecheck de server (`tsc --noEmit`) + build del client |
 
 ### Comandos por aplicación
@@ -68,10 +69,31 @@ npm run build      # tsc → dist/
 npm run start      # node dist/server/src/index.js
 npm run typecheck  # tsc --noEmit
 npm run lint       # oxlint
-npm run test       # build + test:unit + test:e2e
+npm run test       # build + test:unit + test:seed + test:e2e
 npm run test:unit  # tests del ProcessStore (autoría, caché de roles, N+1)
+npm run test:seed  # tests del seed de datos demo (idempotencia, modelos válidos)
 npm run test:e2e   # tests end-to-end de la API (Fase 4, DB temporal)
+npm run seed       # crea los datos de prueba en la DB de dev
 ```
+
+## Datos de prueba
+
+`npm run seed` siembra la base de dev con lo justo para recorrer la app sin
+registrar nada a mano:
+
+| Email | Contraseña | Rol | Qué sirve para ver |
+| --- | --- | --- | --- |
+| `ana@demo.local` | `demo1234` | owner de los 2 | Collaboration (invitar, quitar), badge de owner, botón Compartir |
+| `bruno@demo.local` | `demo1234` | editor de uno, viewer del otro | Editar uno, solo lectura en el otro, badge de rol |
+
+"Pedido de compra" tiene 3 versiones guardadas por Ana y Bruno (se ve el autor
+en el historial) y una invitación viva a `pendiente@ejemplo.local`, para ver cómo
+se ve una invitación que todavía no fue aceptada. En `/login` hay dos botones
+que rellenan el formulario con esas cuentas: es el login normal con credenciales
+conocidas, **no** un bypass de la autenticación.
+
+El seed es **idempotente**: si `ana@demo.local` ya existe no hace nada, así que
+podés correrlo las veces que quieras sin duplicar datos.
 
 > `start` apunta a `dist/server/src/index.js`: el `tsconfig` del server usa `rootDir: ".."` para compilar también `shared/`, así que la salida queda anidada un nivel más.
 

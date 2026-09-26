@@ -66,8 +66,18 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 npm run dev
 ```
 
-- Frontend → http://localhost:5173 (creá tu usuario en `/register`)
+- Frontend → http://localhost:5173
 - API → http://localhost:4000 (probá con `GET /api/health`)
+
+### Datos de prueba (opcional)
+
+```bash
+npm run seed   # 2 usuarios, 2 procesos con historial, colaboradores e invitación
+```
+
+ obviás el registro manual. Después en `/login` entrás con un clic: **Ana** (owner
+de los dos procesos) o **Bruno** (editor de uno, viewer del otro). Es el login
+normal con credenciales conocidas, no un bypass de la autenticación.
 
 Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 
@@ -88,5 +98,6 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 - **Historial visible (Fase 4 ✅)**: panel lateral con el diff semántico entre versiones, el autor de cada guardado y restauración que crea una versión nueva sin borrar el historial (AD-020).
 - **Modelo compartido**: `shared/` (`ProcessModel` + `validateProcess`) consumido por client y server (AD-015).
 - **Base de datos**: SQLite nativo (`node:sqlite` + `DatabaseSync`) en `server/src/db/`, modo WAL (AD-010, AD-014).
-- **Tests**: `npm test` corre las tres suites — 47 aserciones end-to-end de la API, 18 de unidad del `ProcessStore` (autoría, caché de roles, consultas) y 12 del diff semántico. Sin framework de tests: `node:test` + `--experimental-strip-types`.
+- **Datos de prueba**: `npm run seed` siembra 2 usuarios, 2 procesos con historial de varios autores, colaboradores de ambos roles y una invitación pendiente — para recorrer la app sin registrar nada (ver [03 — Guía de setup](./docs/03-guia-de-setup.md)).
+- **Tests**: `npm test` corre las cuatro suites — 47 aserciones end-to-end de la API, 18 de unidad del `ProcessStore` (autoría, caché de roles, consultas), 19 del seed (idempotencia, modelos válidos) y 12 del diff semántico. Sin framework de tests: `node:test` + `--experimental-strip-types`.
 - Planificación con OpenSpec: changes archivados en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).
