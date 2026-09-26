@@ -1,7 +1,7 @@
 # autenticacion-usuarios Specification
 
 ## Purpose
-TBD - created by archiving change colaboracion-publicacion. Update Purpose after archive.
+Identidad de los usuarios de la herramienta: que alguien pueda registrarse con su email, mantener su sesión abierta sin volver a escribir la contraseña en cada recarga, y que el servidor confíe en esa sesión sin guardar contraseñas en claro. Cubre el ciclo completo (alta, login, renovación de sesión, perfil y cierre de sesión) sobre autenticación propia, sin proveedor externo. Ver [AD-017](../../docs/09-decisiones-de-diseno.md#ad-017-autenticacion-propia-emailpassword--jwt).
 
 ## Requirements
 

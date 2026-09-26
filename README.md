@@ -19,7 +19,7 @@ Toda la documentación del proyecto vive en [`docs/`](./docs/), en formato `.md`
 | [05 — Frontend](./docs/05-frontend.md) | Stack, convenciones y plan del cliente web |
 | [06 — Backend](./docs/06-backend.md) | Stack, convenciones y plan de la API |
 | [07 — API](./docs/07-api.md) | Endpoints actuales y planeados, con ejemplos |
-| [08 — Modelo de datos](./docs/08-modelo-de-datos.md) | Entidades planeadas del dominio |
+| [08 — Modelo de datos](./docs/08-modelo-de-datos.md) | Entidades del dominio y esquema de la base |
 | [09 — Decisiones de diseño](./docs/09-decisiones-de-diseno.md) | ADRs: por qué se eligió cada cosa |
 | [10 — Roadmap](./docs/10-roadmap.md) | Fases de desarrollo y estado actual |
 | [11 — Convenciones y flujo de trabajo](./docs/11-convenciones-y-flujo-de-trabajo.md) | Git, código, documentación |
@@ -30,10 +30,11 @@ Toda la documentación del proyecto vive en [`docs/`](./docs/), en formato `.md`
 
 | Capa | Tecnología |
 | --- | --- |
-| Frontend | React 19 + Vite 8 + TypeScript |
+| Frontend | React 19 + Vite 8 + TypeScript + React Router 7 |
 | Modelador visual | React Flow (`@xyflow/react`) 12.x (Fase 1) |
 | Backend | Node + Express 5 + TypeScript |
 | **Base de datos** | **node:sqlite nativo** (`DatabaseSync`, Fase 3) |
+| **Autenticación** | **email/password + JWT** (bcrypt + jsonwebtoken, Fase 4) |
 | Modelo compartido | `shared/` vía alias `@shared/*` (Fase 3) |
 | Lint | oxlint |
 | Dev | `concurrently` (levanta client y server juntos) |
@@ -56,10 +57,16 @@ Requisitos: **Node 20+** (probado con Node 25) y npm 10+.
 npm install --prefix client
 npm install --prefix server
 npm install
+
+# La API necesita un secreto para firmar los JWT (obligatorio desde la Fase 4)
+cp server/.env.example server/.env
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+# → pegá el valor en JWT_SECRET= dentro de server/.env
+
 npm run dev
 ```
 
-- Frontend → http://localhost:5173
+- Frontend → http://localhost:5173 (creá tu usuario en `/register`)
 - API → http://localhost:4000 (probá con `GET /api/health`)
 
 Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
@@ -68,14 +75,18 @@ Comandos completos en [03 — Guía de setup](./docs/03-guia-de-setup.md).
 
 ## Estado del proyecto
 
-**Fase actual: 3 — Persistencia en server** ✅ (siguiente: Fase 4 — colaboración)
+**Fase actual: 4 — Colaboración y publicación ✅** (siguiente: Fase 5 — ejecución, requiere decisión de producto)
 
 - **Editor visual**: canvas React Flow con paleta (**Inicio, Fin, Tarea, Decisión**), drag-and-drop de nodos, conexiones, minimapa, snap-to-grid y panel de propiedades.
 - **Validación en tiempo real**: panel de issues (errores/advertencias) al modelar — ver `client/src/lib/validation/`.
 - **Deshacer/rehacer**: historial de snapshots con `Ctrl+Z` / `Ctrl+Shift+Z` y botones (AD-012).
 - **Exportación**: PNG/SVG del diagrama con `html-to-image` (AD-013).
 - **Guardado local** (`localStorage`) con autoguardado; exportar/importar el modelo como JSON.
-- **Persistencia server (Fase 3 ✅)**: CRUD `/api/processes` + versionado inmutable `ProcessVersion` + validación server-side con `validateProcess` compartido (`@shared/validation/`).
-- **Modelo compartido**: `shared/` (`ProcessModel` + `validateProcess`) consumido por client y server vía alias `@shared/*` (AD-015).
-- **Base de datos**: SQLite nativo (`node:sqlite` + `DatabaseSync`) en `server/src/db/` (AD-010, AD-014).
+- **Persistencia server (Fase 3 ✅)**: CRUD `/api/processes` + versionado inmutable `ProcessVersion` + validación server-side con `validateProcess` compartido.
+- **Usuarios y sesión (Fase 4 ✅)**: registro/login propio con bcrypt (12 rondas), access token JWT de 15 min en memoria y refresh token opaco de 7 días en cookie httpOnly, con rotación (AD-017).
+- **Colaboración (Fase 4 ✅)**: permisos por proceso con roles `owner` / `editor` / `viewer`; invitación por email (directa si el usuario existe, por token firmado de 7 días si todavía no se registró); el listado filtra Míos / Compartidos / Todos (AD-018, AD-019).
+- **Historial visible (Fase 4 ✅)**: panel lateral con el diff semántico entre versiones y restauración que crea una versión nueva sin borrar el historial (AD-020).
+- **Modelo compartido**: `shared/` (`ProcessModel` + `validateProcess`) consumido por client y server (AD-015).
+- **Base de datos**: SQLite nativo (`node:sqlite` + `DatabaseSync`) en `server/src/db/`, modo WAL (AD-010, AD-014).
+- **Tests**: suite end-to-end de la API con 40 aserciones — `npm --prefix server run test:e2e`.
 - Planificación con OpenSpec: changes archivados en `openspec/changes/archive/` (ver [Roadmap](./docs/10-roadmap.md)).

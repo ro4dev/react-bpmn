@@ -13,7 +13,7 @@
 | [AD-005](#ad-005-editor-con-react-flow) | Editor sobre React Flow (`@xyflow/react`) | ✅ adoptada (Fase 1) |
 | [AD-006](#ad-006-formato-del-modelo-a-definir) | BPMN estándar vs formato propio simplificado | ✅ adoptada (formato propio, provisional) |
 | [AD-007](#ad-007-puertos-y-proxy-de-desarrollo) | Server en 4000, client en 5173 con proxy `/api` | ✅ adoptada |
-| [AD-008](#ad-008-alcance-modelar-vs-ejecutar) | ¿Solo modelar o también ejecutar procesos? | ⏳ abierta |
+| [AD-008](#ad-008-alcance-modelar-vs-ejecutar) | ¿Solo modelar o también ejecutar procesos? | ✅ **resuelta (Fase 4: modelar; ejecución = Fase 5)** |
 | [AD-009](#ad-009-estado-global) | Estado global del frontend | ✅ adoptada (Fase 2: estado local con hooks) |
 | [AD-010](#ad-010-base-de-datos) | Motor de persistencia del server | ✅ **adoptada (Fase 3: SQLite nativo)** |
 | [AD-011](#ad-011-estado-de-trabajo-del-editor-vs-modelo) | Estado de trabajo del editor (React Flow) vs modelo persistible | ✅ adoptada (Fase 1) |
@@ -22,6 +22,11 @@
 | [AD-014](#ad-014-capa-de-datos-aislada-sqlite) | Capa de datos SQLite aislada (`server/src/db/`) | ✅ adoptada (Fase 3) |
 | [AD-015](#ad-015-modelo-compartido-shared) | Modelo + validación pura en `shared/` con alias `@shared/*` | ✅ adoptada (Fase 3) |
 | [AD-016](#ad-016-versionado-inmutable-procesos) | Versionado inmutable por guardado (`ProcessVersion`) | ✅ adoptada (Fase 3) |
+| [AD-017](#ad-017-autenticacion-propia-emailpassword--jwt) | Autenticación propia: email/password + JWT | ✅ **adoptada (Fase 4)** |
+| [AD-018](#ad-018-autorizacion-por-proceso-ownereditorviewer) | Autorización por proceso con roles `owner`/`editor`/`viewer` | ✅ **adoptada (Fase 4)** |
+| [AD-019](#ad-019-invitacion-por-token-jwt-firmado) | Invitación a usuarios no registrados vía token firmado | ✅ **adoptada (Fase 4)** |
+| [AD-020](#ad-020-timeline-de-versiones-en-la-ui) | Timeline de versiones en la UI del editor | ✅ **adoptada (Fase 4)** |
+| [AD-021](#ad-021-hash-de-tokens-opacos-con-sha-256) | Hash de refresh tokens con SHA-256 (no bcrypt) | ✅ **adoptada (Fase 4)** |
 
 ---
 
@@ -85,9 +90,9 @@
 
 **Contexto:** la herramienta puede ser solo un editor/documentador, o incluir un motor que ejecute los procesos (tareas asignadas, estados, avance de flujo). Cambia el alcance mucho.
 
-**Decisión:** ⏳ Abierta. El roadmap prioriza **modelar y documentar** primero; la ejecución se evalúa al llegar a un modelado estable.
+**Decisión:** ✅ **Resuelta en la Fase 4: el alcance es _modelar_, no _ejecutar_.** La Fase 4 (colaboración/publicación: auth, permisos, invitaciones, historial) cerró la última decisión abierta del modelado; el motor de ejecución queda para la **Fase 5** y requiere una decisión de producto nueva (instancias, estados de tarea, disparadores, idempotencia).
 
-**Consecuencias:** el formato del modelo debe guardarse en un esquema que permita *algún día* ejecutarlo (separar geometría de la semántica de los nodos, `props` con `responsible`, `condition`…).
+**Consecuencias:** el formato del modelo guarda geometría y semántica separadas (`position` vs `props`), así que un motor de ejecución se puede agregar sin migración. La validación ya exige alcanzabilidad desde el Inicio y llegada a un Fin, que es el invariante mínimo que necesita cualquier ejecutor.
 
 ### AD-012: Historial de snapshots para deshacer/rehacer
 
@@ -169,4 +174,65 @@
 
 **Decisión:** ✅ **Adoptada (Fase 3):** tabla `ProcessVersion` (PK compuesta `processId, version`) con `model` JSON + `comment` + `createdAt`. `Process.currentVersion` apunta a la última. `PUT /api/processes/:id` → `version+1` + `INSERT ProcessVersion` (no `UPDATE`). API de versiones: `GET /:id/versions` (metadatos DESC) + `GET /:id/versions/:v` (modelo completo).
 
-**Consecuencias:** historial completo y auditable sin lógica compleja. El `comment` opcional permite "mensajes de commit". El cliente expone `vN` en la toolbar y lista versiones en la API (UI de timeline: Fase 4).
+**Consecuencias:** historial completo y auditable sin lógica compleja. El `comment` opcional permite "mensajes de commit". El cliente expone `vN` en la toolbar y lista versiones en la API (UI de timeline: Fase 4 → [AD-020](#ad-020-timeline-de-versiones-en-la-ui)).
+
+### AD-017: Autenticación propia (email/password + JWT)
+
+**Contexto:** sin usuarios no hay dueño de un proceso ni colaboración. Las opciones eran un proveedor externo (Auth0, Supabase, Clerk) o autenticación propia.
+
+**Decisión:** ✅ **Adoptada (Fase 4):** autenticación propia con **email/password + JWT**.
+- Passwords con **bcrypt, 12 rondas** (el costo de acá es login, no throughput).
+- **Access token** JWT HS256, TTL 15 min, firmado con `JWT_SECRET` de `server/.env` (obligatorio: el server no arranca sin él).
+- **Refresh token opaco** de 48 bytes aleatorios, TTL 7 días, en **cookie httpOnly** (`sameSite=lax`, `secure` en producción) y hasheado en la tabla `RefreshToken` (ver AD-021). Se **rota** en cada refresh: el viejo se elimina, así que reutilizar un token robado falla.
+- En el cliente el access token vive **solo en memoria** (`lib/api/session.ts`), nunca en `localStorage`; el refresh viaja en la cookie, así que recargar la página recupera la sesión con un `POST /api/auth/refresh`.
+
+**Consecuencias:** sin dependencia externa ni costo por usuario activo, y `JWT_SECRET` pasa a ser un requisito de despliegue (está en `server/.env.example`). A cambio: correr con un solo proceso (el estado de sesión es la DB, no la memoria, pero no hay revocación "de todas las sesiones" sin la tabla `RefreshToken`, que sí existe). El refresh automático lo maneja `apiFetch`, no cada página.
+
+### AD-018: Autorización por proceso (owner/editor/viewer)
+
+**Contexto:** con varios usuarios, hace falta decidir si los permisos son globales o por recurso. Un modelo de workspaces/equipos agregaba una entidad entera que el producto no necesita todavía.
+
+**Decisión:** ✅ **Adoptada (Fase 4):** permisos **por proceso**, vía la tabla `ProcessCollaborator` (`processId`, `userId`, `role`) con tres roles: `owner`, `editor`, `viewer`.
+
+| Acción | owner | editor | viewer |
+| --- | :-: | :-: | :-: |
+| Ver el proceso y su historial | ✅ | ✅ | ✅ |
+| Guardar cambios (crea versión) | ✅ | ✅ | ❌ |
+| Restaurar una versión | ✅ | ✅ | ❌ |
+| Invitar / quitar colaboradores | ✅ | ❌ | ❌ |
+| Cancelar invitaciones | ✅ | ❌ | ❌ |
+| Borrar el proceso | ✅ | ❌ | ❌ |
+
+La fuente de verdad es `Process.ownerId`; el creador queda como `owner` automáticamente y siempre gana sobre cualquier fila de colaboradores. La función de chequeo es una sola (`processStore.canAccess`), usada por todas las rutas, que además pasan por `authRequired`.
+
+**Consecuencias:** cero entidades extra y el modelo de autorización es legible de un vistazo. El rol del usuario actual viene en los metadatos de cada proceso (`ProcessMeta.role`), así la UI muestra el badge y deshabilita acciones sin pedir permisos extra. Un proceso sin `ownerId` (migrado de la Fase 3) deja de ser accesible hasta que se le asigne uno.
+
+### AD-019: Invitación por token JWT firmado
+
+**Contexto:** el owner quiere compartir con alguien que todavía no tiene cuenta. Crear la cuenta automáticamente sería una decisión de producto fuerte; tampoco hay SMTP en el alcance.
+
+**Decisión:** ✅ **Adoptada (Fase 4):** invitar por email genera una fila en `Invitation` con un **token JWT firmado** (`{ iid, email, processId, role }`, 7 días). Al aceptarlo:
+1. se verifica la firma (sin `JWT_SECRET` el token es inválido),
+2. se exige que la invitación siga viva en la DB (permite revocar sin esperar a que expire),
+3. se exige que el usuario autenticado tenga **ese** email,
+4. se agrega como colaborador y la invitación se invalida (no se puede aceptar dos veces).
+
+Si el email **ya está registrado** no hace falta invitación: se agrega como colaborador directo. Sin SMTP, el "email" se **loguea en la consola** y la UI muestra un link copiable (`/invitaciones?token=…`); `GET /api/invitations/mine` lista las pendientes del usuario.
+
+**Consecuencias:** el alta de colaborador al aceptar usa `addCollaboratorDirect` (sin chequeo de permisos) porque el owner ya la autorizó al emitir la invitación; usar `addCollaborator` exigiría `manage_collaborators` al que acepta, o sea fallaría siempre.
+
+### AD-020: Timeline de versiones en la UI
+
+**Contexto:** la Fase 3 guardaba el historial pero la UI solo mostraba `vN`. Sin visibilidad del cambio, el versionado es útil para auditar, no para trabajar.
+
+**Decisión:** ✅ **Adoptada (Fase 4):** panel lateral derecho en el editor (cuarta columna del grid, se abre con el botón **Historial** de la toolbar). Lista las versiones en orden descendente con fecha y `comment`; al seleccionar una muestra el **diff contra la versión anterior** y un botón **Restaurar**. El diff es **semántico de grafo** (`client/src/lib/model/diff.ts`): nodos agregados/eliminados/modificados/movidos y aristas agregadas/eliminadas por separado, con `fields` para los modificados. Restaurar es `POST /:id/versions/:v/restore`, que **crea la versión N+1** con el modelo viejo: el historial sigue siendo inmutable (AD-016).
+
+**Consecuencias:** comparar dos versiones cuesta 2 requests (el servidor devuelve modelos completos, no hay diff en el backend — con volúmenes chicos es lo más simple y evita duplicar la lógica de diff en dos lenguajes). Un `viewer` puede ver el historial pero la UI oculta "Restaurar" y lo explica. La v1 se compara contra el modelo vacío, porque no tiene versión anterior.
+
+### AD-021: Hash de tokens opacos con SHA-256 (no bcrypt)
+
+**Contexto:** la primera implementación hasheaba el refresh token con bcrypt y verificaba **recorriendo toda la tabla** con un `compareSync` por fila. Además comparaba el token contra el `id` de la fila en vez del hash, así que la rotación nunca revocaba nada.
+
+**Decisión:** ✅ **Adoptada (Fase 4):** los tokens opacos (refresh e invitación) se hashean con **SHA-256** y se verifican con un `SELECT ... WHERE tokenHash = ?`. bcrypt queda reservado para passwords, que sí son de baja entropía y se verifican poco seguido.
+
+**Consecuencias:** la verificación es un lookup por índice en vez de O(n) comparaciones lentas. Es seguro porque el token tiene 122+ bits de entropía de CSPRNG: no hay diccionario que atacar, y un atacante con acceso a la DB obtiene el SHA-256 de algo que no puede producir. Si alguna vez un token pasa a ser derivado de algo elegido por el usuario, hay que volver a bcrypt.

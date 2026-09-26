@@ -1,7 +1,7 @@
 # historial-versiones-ui Specification
 
 ## Purpose
-TBD - created by archiving change colaboracion-publicacion. Update Purpose after archive.
+Hacer visible el versionado que ya guardaba el servidor. Sin historial en pantalla, las versiones sirven para auditar pero no para trabajar: no se puede ver qué cambió ni volver atrás. Cubre el panel lateral con el diff entre versiones y la restauración, que crea una versión nueva en vez de borrar el historial. Ver [AD-020](../../docs/09-decisiones-de-diseno.md#ad-020-timeline-de-versiones-en-la-ui).
 
 ## Requirements
 

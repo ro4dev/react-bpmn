@@ -26,6 +26,18 @@ npm install --prefix client
 npm install --prefix server
 ```
 
+### Configurar el server (Fase 4)
+
+La API necesita un secreto para firmar los JWT. **Sin esto no arranca**:
+
+```bash
+cp server/.env.example server/.env
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+# → pegá el valor en JWT_SECRET= dentro de server/.env
+```
+
+`server/.env` está en `.gitignore`: nunca subas el secreto real.
+
 ## Comandos
 
 Todos los comandos se corren **desde la raíz del repo**, salvo indicación contraria.
@@ -51,10 +63,13 @@ npm run preview    # sirve el build anterior
 # Desde server/
 npm run dev        # tsx watch src/index.ts
 npm run build      # tsc → dist/
-npm run start      # node dist/index.js
+npm run start      # node dist/server/src/index.js
 npm run typecheck  # tsc --noEmit
 npm run lint       # oxlint
+npm run test:e2e   # tests end-to-end de la API (Fase 4, DB temporal)
 ```
+
+> `start` apunta a `dist/server/src/index.js`: el `tsconfig` del server usa `rootDir: ".."` para compilar también `shared/`, así que la salida queda anidada un nivel más.
 
 ## Verificar que todo anda
 
@@ -66,15 +81,23 @@ npm run lint       # oxlint
 { "status": "ok", "timestamp": "2026-09-23T00:58:35.938Z" }
 ```
 
+4. Crear el primer usuario: abrí `http://localhost:5173/register` (la app redirige a `/login` si no hay sesión).
+
 ## Variables de entorno
 
 | Variable | Dónde | Default | Uso |
 | --- | --- | --- | --- |
-| `PORT` | `server/.env` (ver `server/.env.example`) | `4000` | Puerto de la API |
+| `JWT_SECRET` | `server/.env` (ver `server/.env.example`) | — | **Obligatoria.** Firma access tokens e invitaciones. El server no arranca sin ella. |
+| `PORT` | `server/.env` | `4000` | Puerto de la API |
+| `DB_PATH` | `server/.env` | `data/processes.db` | Ruta del archivo SQLite (relativa al paquete `server/`) |
 
-En desarrollo no hace falta ninguna variable: todo funciona con los defaults.
+Aparte de `JWT_SECRET`, todo funciona con los defaults.
 
 ## Solución de problemas frecuentes
 
+- **"JWT_SECRET no configurado"** → creaste `server/.env.example` pero no `server/.env`, o le falta la línea. Ver [Configurar el server](#configurar-el-server-fase-4).
+- **El server arranca pero toda la API devuelve 401** → el access token expiró (duran 15 min); el cliente lo renueva solo. Si estás probando con `curl`, mandá `Authorization: Bearer <accessToken>`.
+- **"El proceso no encontrado" con un ID que existe** → el usuario no es owner ni colaborador. Cada usuario solo ve lo suyo (ver [AD-018](./09-decisiones-de-diseno.md)).
 - **El puerto 4000 está ocupado** → cerrá el proceso o definí `PORT` en `server/.env` (y ajustá el proxy en `client/vite.config.ts`).
 - **El client no llega a la API** → verificar que el server esté corriendo y que la llamada sea a `/api/*` (el proxy solo reenvía esas rutas).
+- **`npm start` falla con `ERR_MODULE_NOT_FOUND` en un archivo de `shared/`** → rebuild del server: `npm --prefix server run build`. Los imports del modelo compartido se resuelven en runtime desde el JS emitido.

@@ -50,16 +50,22 @@ Objetivo: poder **dibujar un proceso** en el navegador.
 
 > Implementado y archivado en OpenSpec (`openspec/changes/archive/`). Validación: `npm run lint` 0/0 + `npm run build` OK en client y server.
 
-## Fase 4 — Colaboración y publicación ⏳
+## Fase 4 — Colaboración y publicación ✅
 
-- [ ] Usuarios y autenticación (AD-008)
-- [ ] Compartir procesos (link público / permisos)
-- [ ] Historial de cambios por versión (UI timeline)
+- [x] Usuarios y autenticación (AD-008 resuelto → [AD-017](./09-decisiones-de-diseno.md)): registro/login propio, bcrypt + JWT, refresh en cookie httpOnly, rutas protegidas en la UI
+- [x] Permisos por proceso: roles `owner` / `editor` / `viewer`, badge de rol, panel de propiedades en solo lectura para viewers ([AD-018](./09-decisiones-de-diseno.md))
+- [x] Compartir procesos: invitación por email (directa si el usuario existe, por token firmado si no), quitar colaboradores, cancelar invitaciones ([AD-019](./09-decisiones-de-diseno.md))
+- [x] Historial de cambios por versión: panel lateral con diff semántico contra la versión anterior y restauración que crea la N+1 ([AD-020](./09-decisiones-de-diseno.md))
+- [x] Listado con filtro Míos / Compartidos / Todos
+- [x] Tests end-to-end de la API: `npm --prefix server run test:e2e` (40 aserciones)
 
-## Fase 5 — Ejecución (en evaluación) ⏳
+> Implementado y archivado en OpenSpec (`openspec/changes/archive/2026-09-25-colaboracion-publicacion`). Validación: `npm run lint` 0 errores + `npm run build` OK en client y server + suite e2e en verde.
 
-Solo si se resuelve [AD-008](./09-decisiones-de-diseno.md) a favor de ejecutar:
+## Fase 5 — Ejecución ⏳
 
+Fuera del alcance actual: [AD-008](./09-decisiones-de-diseno.md) se resolvió a favor de **modelar**, no ejecutar. Esta fase requiere una **decisión de producto nueva** antes de arrancar (instancias y su ciclo de vida, estados de tarea, disparadores, idempotencia, cómo se traduce `props` a una máquina de estados).
+
+- [ ] Definir el modelo de instancias y el motor de ejecución
 - [ ] Motor de instancias de proceso
 - [ ] Tareas asignadas a usuarios/roles
 - [ ] Panel de "mis tareas"
@@ -67,5 +73,5 @@ Solo si se resuelve [AD-008](./09-decisiones-de-diseno.md) a favor de ejecutar:
 
 ## Notas
 
-- El orden de las fases puede cambiar según las decisiones abiertas (AD-006, AD-008).
+- El orden de las fases puede cambiar según las decisiones abiertas (AD-006 sigue abierta: el formato propio del modelo es provisional).
 - Cada fase completa su trabajo con la **actualización de la documentación** correspondiente (regla del proyecto, ver [11 — Convenciones](./11-convenciones-y-flujo-de-trabajo.md)).

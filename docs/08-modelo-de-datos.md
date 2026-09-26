@@ -2,7 +2,7 @@
 
 > Documento: `docs/08-modelo-de-datos.md`
 >
-> Formato y entidades del dominio. El **formato del modelo** ya está implementado en la Fase 1 en `client/src/lib/model/` (JSON propio, ver [AD-006](./09-decisiones-de-diseno.md)); las **entidades de persistencia** se concretan en la Fase 3 (CRUD de procesos + versionado).
+> Formato y entidades del dominio. El **formato del modelo** ya está implementado en la Fase 1 en `client/src/lib/model/` (JSON propio, ver [AD-006](./09-decisiones-de-diseno.md)); las **entidades de persistencia** están implementadas desde la Fase 3 (CRUD + versionado) y la Fase 4 (usuarios, permisos, invitaciones).
 
 ## El modelo de proceso (el corazón de la app)
 
@@ -50,23 +50,37 @@ interface ProcessEdge {
 
 > La Fase 1 implementó la paleta mínima **Inicio, Fin, Tarea, Decisión** (confirmada con el usuario); `wait` queda fuera por ahora. El formato final del modelo sigue condicionado por [AD-006](./09-decisiones-de-diseno.md): BPMN estándar (`bpmn-js`) o formato propio simplificado. Hoy está implementado el formato propio (ver la serialización en `client/src/lib/model/`).
 
-## Entidades de persistencia (✅ implementadas Fase 3)
+## Entidades de persistencia (✅ implementadas Fase 3 + 4)
+
+Motor: SQLite nativo (`node:sqlite` + `DatabaseSync`) en modo **WAL**. Esquema en `server/src/db/schema.ts` (idempotente: `CREATE TABLE IF NOT EXISTS`), creado en el constructor de los stores.
 
 | Entidad | Tabla | Campos | Notas |
 | --- | --- | --- | --- |
-| `Process` | `Process` | `id` (PK), `name`, `currentVersion`, `createdAt`, `updatedAt` | Metadatos del proceso + versión actual |
+| `Process` | `Process` | `id` (PK), `name`, `currentVersion`, `ownerId` (FK), `createdAt`, `updatedAt` | Metadatos + versión actual + dueño |
 | `ProcessVersion` | `ProcessVersion` | `id` (PK auto), `processId` (FK), `version`, `model` (JSON), `comment`, `createdAt` | Versión inmutable por guardado; UNIQUE(processId, version) |
-| `User` | — | — | Pendiente (Fase 4 / AD-008) |
+| `User` | `User` | `id` (PK), `email` (UNIQUE), `passwordHash`, `name`, `avatar`, `createdAt` | Usuarios de la Fase 4 |
+| `ProcessCollaborator` | `ProcessCollaborator` | `processId` + `userId` (PK compuesta), `role`, `invitedAt` | Roles `editor` / `viewer` |
+| `Invitation` | `Invitation` | `id` (PK), `email`, `processId` (FK), `role`, `token`, `expiresAt`, `createdAt` | Invitación para emails sin cuenta |
+| `RefreshToken` | `RefreshToken` | `id` (PK), `userId` (FK), `tokenHash`, `expiresAt`, `createdAt` | Sesiones; se rota en cada refresh |
 
 ### Relaciones
 
 ```
-Process 1───* ProcessVersion   (ON DELETE CASCADE)
+User 1───* Process          (ownerId, ON DELETE SET NULL)
+User *───* Process          (vía ProcessCollaborator: editor / viewer)
+Process 1───* ProcessVersion (ON DELETE CASCADE)
+Process 1───* Invitation     (ON DELETE CASCADE)
+User    1───* RefreshToken   (ON DELETE CASCADE)
 ```
+
+`Process.ownerId` es la **fuente de verdad** del rol `owner` (no hay fila en `ProcessCollaborator` para el dueño), y `roleOf()` lo prioriza sobre cualquier fila de colaboradores.
 
 Índices:
 - `idx_process_updatedAt` (para listado ordenado)
 - `idx_process_version_processId` (para listado de versiones DESC)
+- `idx_process_ownerId` (para "mis procesos")
+- `idx_collaborator_userId` (para "compartidos conmigo")
+- `idx_refresh_token_userId` (logout en todos los dispositivos)
 
 ### Estados derivados (calculados en API, no almacenados)
 
@@ -81,13 +95,14 @@ Process 1───* ProcessVersion   (ON DELETE CASCADE)
 
 | Estado | Significado |
 | --- | --- |
-| `draft` | Borrador, trabajo en curso (localStorage) |
+| `draft` | Borrador, trabajo en curso (localStorage, aún no guardado en el server) |
 | `saved` | Guardado en server (tiene `id` + versión) |
 | `archived` | Dado de baja (informativo) |
 
-## Decisiones adoptadas (Fase 3)
+## Decisiones adoptadas (Fase 4)
 
-- **Motor de base de datos**: ✅ **SQLite nativo** (`node:sqlite` + `DatabaseSync`). Ver [AD-010](./09-decisiones-de-diseno.md).
-- **Versionado**: ✅ **Inmutable** (`ProcessVersion` por guardado, `Process.currentVersion` = última). Ver [AD-016](./09-decisiones-de-diseno.md).
-- **Modelo compartido**: ✅ **`shared/`** con `ProcessModel` + `validateProcess` vía alias `@shared/*`. Ver [AD-015](./09-decisiones-de-diseno.md).
-- **Persistencia local primero (navegador) y server después**: ✅ implementado en la Fase 1 (`localStorage` + autoguardado en `useProcessModel`); la API de procesos (Fase 3) es la persistencia definitiva y fuente de verdad para trabajo compartido.
+- **Autenticación**: ✅ **email/password + JWT** (bcrypt 12 rondas, access token 15 min, refresh token opaco 7 días en cookie httpOnly, rotado en cada refresh). Ver [AD-017](./09-decisiones-de-diseno.md).
+- **Autorización**: ✅ **por proceso**, con `ProcessCollaborator` y roles `owner` / `editor` / `viewer` (sin workspaces). Ver [AD-018](./09-decisiones-de-diseno.md).
+- **Invitaciones**: ✅ **token JWT firmado** de 7 días + tabla `Invitation`; email simulado (log en consola), sin SMTP. Ver [AD-019](./09-decisiones-de-diseno.md).
+- **Tokens opacos**: ✅ hasheados con **SHA-256** para lookup directo por índice; bcrypt queda solo para passwords. Ver [AD-021](./09-decisiones-de-diseno.md).
+- **Migración `ownerId`**: la tabla `Process` de la Fase 3 no tenía dueño. `schema.ts` la agrega de forma idempotente leyendo `PRAGMA table_info`, así que una base existente se actualiza al arrancar. Los procesos previos quedan **sin acceso** hasta que se les asigne un `ownerId`.

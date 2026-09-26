@@ -1,7 +1,7 @@
 # autorizacion-procesos Specification
 
 ## Purpose
-TBD - created by archiving change colaboracion-publicacion. Update Purpose after archive.
+Decidir quién puede hacer qué sobre cada proceso. Sin esto, con varios usuarios, cualquiera que conozca un id podría leer o pisar el trabajo de otro. Cubre la asignación automática del owner, los tres roles (`owner` / `editor` / `viewer`), el rechazo de operaciones sin permiso y la traducción de ese permiso a la UI (badges, acciones deshabilitadas, solo lectura). Ver [AD-018](../../docs/09-decisiones-de-diseno.md#ad-018-autorizacion-por-proceso-ownereditorviewer).
 
 ## Requirements
 
