@@ -66,6 +66,7 @@ router.post("/", (req: Request, res: Response, next: NextFunction) => {
       model: model as ProcessModel,
       comment,
       ownerId: req.user!.id,
+      authorName: req.user!.name,
     });
     res.status(201).json({ ...meta, collaborator });
   } catch (e) {
@@ -127,6 +128,7 @@ router.put("/:id", (req: Request, res: Response, next: NextFunction) => {
       name: name?.trim(),
       model: model as ProcessModel | undefined,
       comment,
+      authorName: req.user!.name,
     });
     res.json(updated);
   } catch (e) {
@@ -202,6 +204,7 @@ router.post("/:id/versions/:v/restore", (req: Request, res: Response, next: Next
     const updated = store.update(req.user!.id, id, {
       model: version.model,
       comment: `Restaurado desde v${versionNum}`,
+      authorName: req.user!.name,
     });
     res.json(updated);
   } catch (e) {

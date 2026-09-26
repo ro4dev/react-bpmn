@@ -173,6 +173,15 @@ async function main(): Promise<void> {
   const versions = await api("ana", `/processes/${processId}/versions`, { token: anaToken2 });
   check("el historial tiene 2 versiones", versions.body?.length === 2, versions);
 
+  // Autoría: el historial dice quién guardó cada versión.
+  const v1Meta = versions.body?.find((v: any) => v.version === 1);
+  const v2Meta = versions.body?.find((v: any) => v.version === 2);
+  check("la v1 registra a Ana como autora", v1Meta?.authorName === "Ana" && !!v1Meta?.authorId, v1Meta);
+  check("la v2 registra a Ana como autora", v2Meta?.authorName === "Ana", v2Meta);
+
+  const v1Detail = await api("ana", `/processes/${processId}/versions/1`, { token: anaToken2 });
+  check("el detalle de una versión trae el autor", v1Detail.body?.authorName === "Ana", v1Detail.body);
+
   const restore = await api("ana", `/processes/${processId}/versions/1/restore`, {
     method: "POST",
     token: anaToken2,
@@ -182,6 +191,14 @@ async function main(): Promise<void> {
 
   const versionsAfter = await api("ana", `/processes/${processId}/versions`, { token: anaToken2 });
   check("el historial sigue siendo inmutable (3 versiones)", versionsAfter.body?.length === 3, versionsAfter);
+  const v3Meta = versionsAfter.body?.find((v: any) => v.version === 3);
+  check("la versión restaurada queda a nombre de quien restauró", v3Meta?.authorName === "Ana", v3Meta);
+
+  // Listado: rol del owner y metadatos derivados (subconsultas, no N+1).
+  const myList = await api("ana", "/processes", { token: anaToken2 });
+  const mine = myList.body?.find((p: any) => p.id === processId);
+  check("el listado del owner marca role=owner", mine?.role === "owner", mine?.role);
+  check("el listado trae versionCount y preview", mine?.versionCount === 3 && /nodos/.test(mine?.preview ?? ""), mine);
 
   // 4. Colaboración.
   console.log("\n▸ Colaboradores");
@@ -206,6 +223,11 @@ async function main(): Promise<void> {
     body: JSON.stringify({ model: processModel, comment: "toque de Bruno" }),
   });
   check("un editor puede guardar", brunoSave.status === 200 && brunoSave.body.currentVersion === 4, brunoSave);
+
+  // La v4 la guardó Bruno: el historial distingue autores, no solo fechas.
+  const afterBrunoSave = await api("ana", `/processes/${processId}/versions`, { token: anaToken2 });
+  const v4Meta = afterBrunoSave.body?.find((v: any) => v.version === 4);
+  check("la v4 registra a Bruno como autor", v4Meta?.authorName === "Bruno", v4Meta);
 
   const brunoInvite = await api("bruno", `/processes/${processId}/collaborators`, {
     method: "POST",

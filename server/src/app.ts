@@ -13,12 +13,15 @@ import { healthRouter } from "./routes/health.js";
 import { processesRouter } from "./routes/processes.js";
 import { authRouter } from "./routes/auth.js";
 import { invitationsRouter } from "./routes/invitations.js";
+import { roleCache } from "./middleware/roleCache.js";
 
 export const app = express();
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+// Antes de las rutas que chequean permisos: memoiza `roleOf` durante el request.
+app.use(roleCache);
 
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);

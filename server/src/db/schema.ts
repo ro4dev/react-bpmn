@@ -39,7 +39,7 @@ export function initSchema(db: DatabaseSync): void {
     );
   `);
 
-  // Tabla de versiones inmutables (Fase 3)
+  // Tabla de versiones inmutables (Fase 3 + authorId Fase 4)
   db.exec(`
     CREATE TABLE IF NOT EXISTS ProcessVersion (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,6 +47,8 @@ export function initSchema(db: DatabaseSync): void {
       version      INTEGER NOT NULL,
       model        TEXT NOT NULL,
       comment      TEXT,
+      authorId     TEXT REFERENCES User(id) ON DELETE SET NULL,
+      authorName   TEXT,
       createdAt    TEXT NOT NULL,
       UNIQUE(processId, version)
     );
@@ -98,12 +100,27 @@ export function initSchema(db: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_refresh_token_userId ON RefreshToken(userId);
   `);
 
-  // Migración: añadir ownerId a procesos existentes si no existe (idempotente)
-  // SQLite no soporta ADD COLUMN IF NOT EXISTS, así que usamos PRAGMA table_info
-  const cols = db.prepare("PRAGMA table_info(Process)").all() as Array<{ name: string }>;
-  const hasOwnerId = cols.some((c) => c.name === "ownerId");
-  if (!hasOwnerId) {
-    db.exec(`ALTER TABLE Process ADD COLUMN ownerId TEXT REFERENCES User(id) ON DELETE SET NULL;`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_process_ownerId ON Process(ownerId);`);
-  }
+  // Migraciones (idempotentes). SQLite no soporta ADD COLUMN IF NOT EXISTS,
+  // así que inspeccionamos PRAGMA table_info antes de cada ALTER.
+  addColumnIfMissing(db, "Process", "ownerId", "TEXT REFERENCES User(id) ON DELETE SET NULL");
+
+  // Autoría de las versiones. `authorName` está desnormalizado a propósito:
+  // `authorId` queda en NULL si el usuario se borra, pero el historial sigue
+  // mostrando de quién era cada versión en vez de perder el dato para siempre.
+  addColumnIfMissing(db, "ProcessVersion", "authorId", "TEXT REFERENCES User(id) ON DELETE SET NULL");
+  addColumnIfMissing(db, "ProcessVersion", "authorName", "TEXT");
+
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_process_ownerId ON Process(ownerId);`);
+}
+
+/** Agrega una columna si la tabla todavía no la tiene. */
+function addColumnIfMissing(
+  db: DatabaseSync,
+  table: string,
+  column: string,
+  definition: string,
+): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (cols.some((c) => c.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition};`);
 }
