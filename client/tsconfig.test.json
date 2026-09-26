@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "types": ["node"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Los tests se corren con node --experimental-strip-types, que exige
+       specifiers con extensión explícita (allowImportingTsExtensions) y código
+       que se pueda borrar sin transformar (erasableSyntaxOnly). */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Path aliases (los mismos que tsconfig.app.json: el código importado los usa) */
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/src/*"]
+    },
+    "ignoreDeprecations": "6.0",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["test"]
+}
