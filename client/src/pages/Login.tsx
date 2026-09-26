@@ -1,12 +1,23 @@
 /**
  * Página de login (Fase 4).
  * Formulario email/password, validación client-side, llama auth.login.
+ *
+ * Incluye acceso rápido a los usuarios del seed (`npm run seed`): no es un
+ * bypass de auth, son el login normal con credenciales conocidas, para poder
+ * recorrer la app en local sin registrar usuario a mano.
  */
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useAuth } from "../context/AuthContext";
 import "./AuthPages.css";
+
+/** Mismas credenciales que crea `server/src/db/seed.ts` (DEMO_PASSWORD). */
+const DEMO_ACCOUNTS = [
+  { email: "ana@demo.local", label: "Ana", role: "owner · 2 procesos con historial" },
+  { email: "bruno@demo.local", label: "Bruno", role: "editor y viewer · vista collaborators" },
+];
+const DEMO_PASSWORD = "demo1234";
 
 export function Login() {
   const { login } = useAuth();
@@ -27,6 +38,13 @@ export function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  /** Acceso rápido: rellena el formulario con una cuenta demo. */
+  const handleDemo = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword(DEMO_PASSWORD);
+    setError("");
   };
 
   return (
@@ -63,6 +81,28 @@ export function Login() {
             {loading ? "Entrando…" : "Entrar"}
           </button>
         </form>
+
+        <hr className="rb-auth-divider" />
+
+        <div className="rb-auth-demo">
+          <p className="rb-auth-demo-title">Acceso rápido (datos de prueba)</p>
+          {DEMO_ACCOUNTS.map((account) => (
+            <button
+              key={account.email}
+              type="button"
+              className="rb-auth-demo-btn"
+              onClick={() => handleDemo(account.email)}
+              disabled={loading}
+            >
+              <strong>{account.label}</strong>
+              <span>{account.role}</span>
+            </button>
+          ))}
+          <p className="rb-auth-demo-hint">
+            Corré <code>npm run seed</code> en la raíz para crear estas cuentas.
+          </p>
+        </div>
+
         <p className="rb-auth-link">
           ¿No tenés cuenta? <Link to="/register">Registrate</Link>
         </p>
