@@ -119,6 +119,28 @@ try {
     return forAna?.role === "owner" && forBruno?.role === "viewer";
   })());
 
+  console.log("\n▸ Búsqueda (regresión de la precedencia AND/OR)");
+  // En SQL `AND` liga más fuerte que `OR`: si el WHERE queda
+  // `ownerId = ? OR pc.userId = ? AND name LIKE ?`, el `LIKE` solo filtra los
+  // procesos compartidos y los propios pasan todos. Con dos procesos en la base
+  // no se notaba; con un catálogo de 100, la búsqueda no filtraba nada.
+  store.create({ name: "Alta de empleado", model: model(3), ownerId: ana.id, authorName: "Ana" });
+  const ajeno = store.create({
+    name: "Cierre contable mensual",
+    model: model(3),
+    ownerId: bruno.id,
+    authorName: "Bruno",
+  });
+  // Ana es colaboradora del de Bruno, así que también lo ve en el listado.
+  store.addCollaboratorDirect(ajeno.meta.id, ana.id, "viewer");
+  const propias = store.list(ana.id, { q: "empleado" }).map((p) => p.name);
+  check("filtra los procesos propios", propias.length === 1 && propias[0] === "Alta de empleado", propias);
+  const compartidos = store.list(ana.id, { q: "contable" }).map((p) => p.name);
+  check("filtra los compartidos", compartidos.length === 1 && compartidos[0] === "Cierre contable mensual", compartidos);
+  const ambos = store.list(ana.id, { q: "e" }).map((p) => p.name).sort();
+  check("sin coincidencia no devuelve nada", store.list(ana.id, { q: "zzzz" }).length === 0);
+  check("con coincidencia parcial trae los que pide", ambos.includes("Alta de empleado"), ambos);
+
   console.log("\n▸ Consultas (regresión del N+1)");
   // El authorizer autoriza una vez por sentencia (y una vez por subconsulta),
   // no por fila. Por eso la regresión se mide comparando el conteo con 2

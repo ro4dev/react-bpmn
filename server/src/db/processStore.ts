@@ -212,11 +212,14 @@ export class ProcessStore {
              CASE WHEN p.ownerId = ? THEN 'owner' ELSE pc.role END AS viewerRole
       FROM Process p
       LEFT JOIN ProcessCollaborator pc ON p.id = pc.processId AND pc.userId = ?
-      WHERE p.ownerId = ? OR pc.userId = ?
+      WHERE (p.ownerId = ? OR pc.userId = ?)
     `;
     const params: string[] = [userId, userId, userId, userId];
 
     if (filter?.q) {
+      // Los paréntesis del WHERE de arriba son imprescindibles: en SQL `AND`
+      // liga más fuerte que `OR`, así que sin ellos el `LIKE` solo filtraba los
+      // procesos compartidos y los propios pasaban siempre.
       sql += " AND p.name LIKE ?";
       params.push(`%${filter.q}%`);
     }
